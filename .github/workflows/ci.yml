@@ -20,7 +20,7 @@ jobs:
           test -f "规则/Engineering_Guidelines.md"
           test -f "规则/Q2_Implementation_Plan.md"
 
-      - name: Frozen rules conformance gate
+        - name: Frozen rules conformance gate
         shell: bash
         run: |
           bash tooling/scripts/conformance.sh
