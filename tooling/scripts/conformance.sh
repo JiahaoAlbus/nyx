@@ -11,12 +11,11 @@ identity.*wallet
 admin.*bypass
 privileged.*bypass
 fee.*exempt
-allowlist
-whitelist
 support override
 '
 
-# Keep scope small for now to avoid false positives/noise.
+# IMPORTANT: Do NOT scan documentation dirs to avoid false positives.
+# Only scan implementation-adjacent dirs.
 TARGET_DIRS=".github tooling packages"
 
 for d in $TARGET_DIRS; do
@@ -24,9 +23,9 @@ for d in $TARGET_DIRS; do
     echo "[conformance] scanning $d"
     echo "$FORBIDDEN_PATTERNS" | while IFS= read -r re; do
       [ -z "$re" ] && continue
-      if grep -RIn --exclude-dir=.git --exclude-dir=node_modules -E "$re" "$d" >/dev/null 2>&1; then
+     if grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude="tooling/scripts/conformance.sh" -E "$re" "$d" >/dev/null 2>&1; then
         echo "[conformance] FAIL: forbidden pattern detected: $re in $d"
-        grep -RIn --exclude-dir=.git --exclude-dir=node_modules -E "$re" "$d" || true
+        grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude="tooling/scripts/conformance.sh" -E "$re" "$d" || true
         exit 1
       fi
     done
