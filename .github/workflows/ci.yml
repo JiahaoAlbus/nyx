@@ -32,6 +32,86 @@ jobs:
             exit 1
           fi
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build placeholder
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f ci/force-fail-build ]; then
+            echo "forced build failure"
+            exit 1
+          fi
+          echo "build placeholder"
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test placeholder
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f ci/force-fail-test ]; then
+            echo "forced test failure"
+            exit 1
+          fi
+          echo "test placeholder"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint placeholder
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f ci/force-fail-lint ]; then
+            echo "forced lint failure"
+            exit 1
+          fi
+          echo "lint placeholder"
+
+  sast:
+    name: SAST
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SAST placeholder
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f ci/force-fail-sast ]; then
+            echo "forced sast failure"
+            exit 1
+          fi
+          echo "sast placeholder"
+
+  dependency-scan:
+    name: Dependency Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency scan placeholder
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f ci/force-fail-deps ]; then
+            echo "forced dependency scan failure"
+            exit 1
+          fi
+          echo "dependency scan placeholder"
+
   conformance:
     name: Conformance (Frozen Rules Gate)
     runs-on: ubuntu-latest
