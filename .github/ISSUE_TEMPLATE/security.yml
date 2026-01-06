@@ -1,0 +1,24 @@
+name: Security issue
+description: Report a security concern (non-sensitive details only).
+title: "[Security]: "
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this is a sensitive security issue, use GitHub Security Advisories instead:
+        https://github.com/JiahaoAlbus/nyx/security/advisories/new
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Provide a high-level summary without sensitive details.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Potential impact if applicable.
+    validations:
+      required: false
