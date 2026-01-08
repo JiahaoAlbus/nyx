@@ -21,7 +21,7 @@ Included artifacts
 - nyx_whitepaper_v_1.md
 - Nyx Whitepaper V1.pdf
 - nyx_self_attack_review.md
-- NYX ???????.docx
+- NYX 五年最终时间表.docx
 
 Scope notes
-- Non-Q1 or mutable planning documents remain outside frozen/q1.Red-team change for CI lock validation.
+- Non-Q1 or mutable planning documents remain outside frozen/q1.
