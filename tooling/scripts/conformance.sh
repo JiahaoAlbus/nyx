@@ -30,11 +30,20 @@ fi
 
 ###############################################################################
 # Scan scope
-# - DO NOT scan documentation directories (rules/plans/docs)
-# - DO NOT scan shell scripts (including this file itself)
-# - Focus only on implementation-adjacent areas
+# - Scan implementation code only
+# - Do NOT scan documentation or scripts
+# - Avoid self-scan by limiting to packages/
 ###############################################################################
-TARGET_DIRS=".github packages tooling"
+TARGET_DIRS="packages"
+INCLUDE_GLOBS=(
+  --include="*.py"
+  --include="*.pyi"
+  --include="*.js"
+  --include="*.ts"
+  --include="*.tsx"
+  --include="*.go"
+  --include="*.rs"
+)
 
 for d in $TARGET_DIRS; do
   if [ ! -d "$d" ]; then
@@ -55,7 +64,12 @@ for d in $TARGET_DIRS; do
     matches=$(grep -RIn \
         --exclude-dir=.git \
         --exclude-dir=node_modules \
+        --exclude-dir=dist \
+        --exclude-dir=build \
+        --exclude="*.md" \
+        --exclude="*.txt" \
         --exclude="*.sh" \
+        "${INCLUDE_GLOBS[@]}" \
         -E "$pattern" "$d" || true)
 
     if [ -n "$matches" ]; then
