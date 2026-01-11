@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+import subprocess
 
 from action import ActionDescriptor, ActionKind
 from engine import FeeEngineV0
@@ -31,6 +33,7 @@ from e2e_demo.trace import (
     ProofEnvelopeTrace,
     SanityTrace,
     StateProofTrace,
+    TraceMeta,
 )
 
 
@@ -48,6 +51,51 @@ class Summary:
     receipt_hash_prefix: str
 
 
+class Prover:
+    def prove(
+        self,
+        *,
+        statement_id: str,
+        context_id: bytes,
+        nonce: bytes,
+        public_inputs: dict,
+        witness: dict,
+    ):
+        raise NotImplementedError
+
+
+class Verifier:
+    def verify(self, envelope, context_id: bytes, statement_id: str) -> bool:
+        raise NotImplementedError
+
+
+class L0MockProver(Prover):
+    def prove(
+        self,
+        *,
+        statement_id: str,
+        context_id: bytes,
+        nonce: bytes,
+        public_inputs: dict,
+        witness: dict,
+    ):
+        return prove_mock(
+            statement_id=statement_id,
+            context_id=context_id,
+            nonce=nonce,
+            public_inputs=public_inputs,
+            witness=witness,
+        )
+
+
+class L0MockVerifier(Verifier):
+    def __init__(self, adapter: MockProofAdapter) -> None:
+        self._adapter = adapter
+
+    def verify(self, envelope, context_id: bytes, statement_id: str) -> bool:
+        return verify(envelope, context_id, statement_id, self._adapter)
+
+
 def _seed_bytes(seed: int) -> bytes:
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise E2EError("seed must be int")
@@ -62,7 +110,24 @@ def _commitment(root_secret: bytes) -> bytes:
     return sha256(b"NYX:IDENTITY:COMMITMENT:v1" + root_secret)
 
 
-def run_e2e(seed: int = 123) -> tuple[E2ETrace, Summary]:
+def _repo_head() -> str:
+    repo_root = Path(__file__).resolve().parents[4]
+    try:
+        output = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo_root, text=True
+        )
+        return output.strip()
+    except Exception:
+        return "unknown"
+
+
+def run_e2e(
+    seed: int = 123,
+    *,
+    prover: Prover | None = None,
+    verifier: Verifier | None = None,
+    repo_head: str | None = None,
+) -> tuple[E2ETrace, Summary]:
     root_secret = _derive_root_secret(seed)
     identity_commitment = _commitment(root_secret)
     context_id = sha256(b"NYX:CTX:E2E:W7")
@@ -72,20 +137,25 @@ def run_e2e(seed: int = 123) -> tuple[E2ETrace, Summary]:
     public_inputs = {"identity_commitment": identity_commitment.hex()}
     witness = {"root_secret": root_secret.hex()}
 
-    envelope = prove_mock(
+    adapter = MockProofAdapter()
+    if prover is None:
+        prover = L0MockProver()
+    if verifier is None:
+        verifier = L0MockVerifier(adapter)
+
+    envelope = prover.prove(
         statement_id=statement_id,
         context_id=context_id,
         nonce=nonce,
         public_inputs=public_inputs,
         witness=witness,
     )
-    adapter = MockProofAdapter()
 
     wrong_context = sha256(b"NYX:CTX:E2E:W7:WRONG")
-    wrong_ok = verify(envelope, wrong_context, statement_id, adapter)
+    wrong_ok = verifier.verify(envelope, wrong_context, statement_id)
     if wrong_ok:
         raise E2EError("wrong context verified")
-    correct_ok = verify(envelope, context_id, statement_id, adapter)
+    correct_ok = verifier.verify(envelope, context_id, statement_id)
     if not correct_ok:
         raise E2EError("expected proof verification")
 
@@ -150,7 +220,21 @@ def run_e2e(seed: int = 123) -> tuple[E2ETrace, Summary]:
         raise E2EError("base fee must be positive")
 
     proof_trace = ProofEnvelopeTrace.from_envelope(envelope)
+    meta = TraceMeta(
+        trace_version="e2e-trace/v1",
+        repo_head=_repo_head() if repo_head is None else repo_head,
+        components={
+            "l0-identity": "sealed",
+            "l0-zk-id": "mock-prover",
+            "l2-economics": "fee-engine-v0",
+            "l1-chain": "devnet-0.1",
+            "wallet-kernel": "sdk",
+            "e2e-demo": "week7",
+        },
+        note="not production crypto",
+    )
     trace = E2ETrace(
+        meta=meta,
         identity=IdentityTrace(commitment_hex=identity_commitment.hex()),
         proof=proof_trace,
         sanity=SanityTrace(
