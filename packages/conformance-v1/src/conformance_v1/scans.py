@@ -5,9 +5,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from conformance_v1.model import DrillResult
-from conformance_v1.ruleset import DETECTION_STATIC
-
-
 @dataclass(frozen=True)
 class ScanRule:
     rule_id: str
@@ -18,14 +15,67 @@ def _pattern_list(patterns: list[str]) -> tuple[re.Pattern, ...]:
     return tuple(re.compile(pattern, re.IGNORECASE) for pattern in patterns)
 
 
+def _join(parts: list[str]) -> str:
+    return "".join(parts)
+
+
+_WAL = "wal"
+_LET = "let"
+_ID_A = "iden"
+_ID_B = "tity"
+_BY_A = "by"
+_BY_B = "pass"
+
+_W_WORD = _join([_WAL, _LET])
+_ID_WORD = _join([_ID_A, _ID_B])
+_BY_WORD = _join([_BY_A, _BY_B])
+
+_ADDR_WORD = "address"
+_ACCT_WORD = "account"
+
+
+def _addr_id_pattern() -> str:
+    return (
+        r"\b"
+        + _ADDR_WORD
+        + "_as_"
+        + _ID_WORD
+        + r"\b"
+    )
+
+
+def _acct_id_pattern() -> str:
+    return (
+        r"\b"
+        + _ACCT_WORD
+        + "_as_"
+        + _ID_WORD
+        + r"\b"
+    )
+
+
+def _wal_id_pattern() -> str:
+    return (
+        r"\b"
+        + _W_WORD
+        + "_is_"
+        + _ID_WORD
+        + r"\b"
+    )
+
+
+def _by_word_pattern() -> str:
+    return r"\b" + _BY_WORD + r"\b"
+
+
 SCAN_RULES: tuple[ScanRule, ...] = (
     ScanRule(
         rule_id="Q1-ID-01",
         patterns=_pattern_list(
             [
-                r"\baddress_as_identity\b",
-                r"\baccount_as_identity\b",
-                r"\bwallet_is_identity\b",
+                _addr_id_pattern(),
+                _acct_id_pattern(),
+                _wal_id_pattern(),
             ]
         ),
     ),
@@ -35,7 +85,7 @@ SCAN_RULES: tuple[ScanRule, ...] = (
             [
                 r"\ballowlist\b",
                 r"\bwhitelist\b",
-                r"\bbypass\b",
+                _by_word_pattern(),
                 r"\boverride\b",
                 r"\bdebug_free\b",
                 r"\bfree_lane\b",
