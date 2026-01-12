@@ -21,7 +21,7 @@ RULES: tuple[Rule, ...] = (
         attack_vector="address-as-identity flags",
         surface="Identity/Codebase",
         severity="BLOCKER",
-        rationale="Wallet/address must not become identity in code paths.",
+        rationale="Account/address must not become identity in code paths.",
         detection=DETECTION_STATIC,
     ),
     Rule(

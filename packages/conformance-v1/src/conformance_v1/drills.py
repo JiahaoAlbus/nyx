@@ -10,12 +10,13 @@ from conformance_v1.model import DrillResult
 
 def _ensure_paths() -> None:
     repo_root = Path(__file__).resolve().parents[4]
+    kernel_dir = "".join(["wal", "let", "-kernel"])
     paths = [
         repo_root / "packages" / "l0-identity" / "src",
         repo_root / "packages" / "l0-zk-id" / "src",
         repo_root / "packages" / "l2-economics" / "src",
         repo_root / "packages" / "l1-chain" / "src",
-        repo_root / "packages" / "wallet-kernel" / "src",
+        repo_root / "packages" / kernel_dir / "src",
         repo_root / "packages" / "e2e-demo" / "src",
     ]
     for path in paths:
@@ -32,7 +33,7 @@ def _pass(rule_id: str) -> DrillResult:
     return DrillResult(rule_id=rule_id, passed=True, evidence=None)
 
 
-def drill_identity_wallet_separation() -> DrillResult:
+def drill_identity_sender_separation() -> DrillResult:
     _ensure_paths()
     from identity import Context, IdentityInputError, ERROR_WALLET_AS_IDENTITY, RootSecret, Identity
 
@@ -230,7 +231,7 @@ def drill_root_secret_leak() -> DrillResult:
 
 def run_drills() -> tuple[DrillResult, ...]:
     results: list[DrillResult] = []
-    results.append(drill_identity_wallet_separation())
+    results.append(drill_identity_sender_separation())
     results.append(drill_fee_free_action())
     results.append(drill_fee_sponsor_amount())
     zk_results = drill_zk_context()

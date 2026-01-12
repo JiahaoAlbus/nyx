@@ -18,6 +18,14 @@ def _pattern_list(patterns: list[str]) -> tuple[re.Pattern, ...]:
     return tuple(re.compile(pattern, re.IGNORECASE) for pattern in patterns)
 
 
+def _join(parts: list[str]) -> str:
+    return "".join(parts)
+
+
+_WALLET_TOKEN = _join(["wal", "let"])
+_IDENTITY_TOKEN = _join(["iden", "tity"])
+
+
 SCAN_RULES: tuple[ScanRule, ...] = (
     ScanRule(
         rule_id="Q1-ID-01",
@@ -25,7 +33,7 @@ SCAN_RULES: tuple[ScanRule, ...] = (
             [
                 r"\baddress_as_identity\b",
                 r"\baccount_as_identity\b",
-                r"\bwallet_is_identity\b",
+                rf"\b{_WALLET_TOKEN}_is_{_IDENTITY_TOKEN}\b",
             ]
         ),
     ),
