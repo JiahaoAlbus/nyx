@@ -12,6 +12,34 @@ class TraceError(ValueError):
 
 
 @dataclass(frozen=True)
+class TraceMeta:
+    trace_version: str
+    repo_head: str
+    components: dict
+    note: str
+
+    def __post_init__(self) -> None:
+        try:
+            require_text(self.trace_version, "trace_version")
+            require_text(self.repo_head, "repo_head")
+            require_text(self.note, "note")
+        except CanonicalizationError as exc:
+            raise TraceError(str(exc)) from exc
+        if not isinstance(self.components, dict):
+            raise TraceError("components must be dict")
+        for key, value in self.components.items():
+            try:
+                require_text(key, "component key")
+                require_text(value, "component value")
+            except CanonicalizationError as exc:
+                raise TraceError(str(exc)) from exc
+        try:
+            canonicalize(self.components)
+        except CanonicalizationError as exc:
+            raise TraceError(str(exc)) from exc
+
+
+@dataclass(frozen=True)
 class IdentityTrace:
     commitment_hex: str
 
@@ -257,6 +285,7 @@ class ChainTrace:
 
 @dataclass(frozen=True)
 class E2ETrace:
+    meta: TraceMeta
     identity: IdentityTrace
     proof: ProofEnvelopeTrace
     sanity: SanityTrace
@@ -265,6 +294,8 @@ class E2ETrace:
     chain: ChainTrace
 
     def __post_init__(self) -> None:
+        if not isinstance(self.meta, TraceMeta):
+            raise TraceError("meta must be TraceMeta")
         if not isinstance(self.identity, IdentityTrace):
             raise TraceError("identity must be IdentityTrace")
         if not isinstance(self.proof, ProofEnvelopeTrace):
@@ -280,6 +311,12 @@ class E2ETrace:
 
     def to_dict(self) -> dict:
         payload = {
+            "meta": {
+                "trace_version": self.meta.trace_version,
+                "repo_head": self.meta.repo_head,
+                "components": self.meta.components,
+                "note": self.meta.note,
+            },
             "identity": {"commitment": self.identity.commitment_hex},
             "proof": {
                 "protocol_version": self.proof.protocol_version,
@@ -351,6 +388,7 @@ class E2ETrace:
         if not isinstance(payload, dict):
             raise TraceError("trace payload must be object")
         try:
+            meta = payload["meta"]
             identity = payload["identity"]
             proof = payload["proof"]
             sanity = payload["sanity"]
@@ -362,6 +400,12 @@ class E2ETrace:
             raise TraceError("trace payload missing fields") from exc
 
         return cls(
+            meta=TraceMeta(
+                trace_version=meta["trace_version"],
+                repo_head=meta["repo_head"],
+                components=meta["components"],
+                note=meta["note"],
+            ),
             identity=IdentityTrace(commitment_hex=identity["commitment"]),
             proof=ProofEnvelopeTrace(
                 protocol_version=proof["protocol_version"],

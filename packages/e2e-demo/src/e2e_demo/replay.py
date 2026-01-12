@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 from action import ActionDescriptor, ActionKind
 from engine import FeeEngineV0
-from fee import FeeComponentId, FeeVector
 from quote import FeePayment
 from verifier import MockProofAdapter, verify
 
@@ -28,17 +27,6 @@ from e2e_demo.trace import E2ETrace
 class ReplayResult:
     ok: bool
     errors: tuple[str, ...]
-
-
-def _component_pairs(components: list[dict[str, object]]) -> tuple[tuple[FeeComponentId, int], ...]:
-    pairs: list[tuple[FeeComponentId, int]] = []
-    for entry in components:
-        component = FeeComponentId(entry["component"])
-        amount = entry["amount"]
-        if not isinstance(amount, int) or isinstance(amount, bool):
-            raise ValueError("fee component amount invalid")
-        pairs.append((component, amount))
-    return tuple(pairs)
 
 
 def replay_and_verify(trace: E2ETrace) -> ReplayResult:
@@ -70,8 +58,15 @@ def replay_and_verify(trace: E2ETrace) -> ReplayResult:
     if trace.sanity.wrong_context_verified:
         errors.append("sanity mismatch: wrong context verified")
 
-    if trace.identity.commitment_hex != trace.proof.public_inputs.get("identity_commitment"):
-        errors.append("identity commitment mismatch")
+    identity_hex = trace.proof.public_inputs.get("identity_commitment")
+    if not isinstance(identity_hex, str):
+        errors.append("identity commitment missing")
+    else:
+        if not compare_digest(
+            hex_to_bytes32(trace.identity.commitment_hex, "commitment"),
+            hex_to_bytes32(identity_hex, "commitment"),
+        ):
+            errors.append("identity commitment mismatch")
 
     try:
         action_kind = ActionKind(trace.action.kind)
@@ -87,7 +82,11 @@ def replay_and_verify(trace: E2ETrace) -> ReplayResult:
         action_descriptor = None
 
     if action_descriptor is not None:
-        if trace.action.action_hash_hex != action_descriptor.action_hash().hex():
+        expected_action_hash = action_descriptor.action_hash()
+        if not compare_digest(
+            expected_action_hash,
+            hex_to_bytes32(trace.action.action_hash_hex, "action_hash"),
+        ):
             errors.append("action hash mismatch")
         fee_engine = FeeEngineV0()
         try:
