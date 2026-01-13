@@ -1,4 +1,9 @@
 from l2_private_ledger.actions import ActionKind, LedgerAction, PrivateMint, PrivateSpend
+from l2_private_ledger.fee_binding import (
+    compute_action_hash as compute_fee_action_hash,
+    enforce_fee_for_private_action,
+    quote_fee_for_private_action,
+)
 from l2_private_ledger.errors import DoubleSpendError, LedgerError, ValidationError
 from l2_private_ledger.interfaces import NoteStore, NullifierStore, PrivateLedgerKernel
 from l2_private_ledger.kernel import apply_action, run_actions_with_trace
@@ -30,6 +35,9 @@ __all__ = [
     "LedgerState",
     "LedgerTraceEntry",
     "LedgerTrace",
+    "compute_fee_action_hash",
+    "quote_fee_for_private_action",
+    "enforce_fee_for_private_action",
     "apply_action",
     "run_actions_with_trace",
     "replay_and_verify",

@@ -7,6 +7,7 @@ This package defines the private ledger v0 state machine for Q3 v1.
 - Deterministic state root from commitment/nullifier sets
 - Trace and replay verification for tamper detection
 - Interfaces: private ledger kernel and stores
+- Fee binding for private ledger actions (mutation requires non-zero fee)
 
 ## Non-goals
 - No proof or chain integration
