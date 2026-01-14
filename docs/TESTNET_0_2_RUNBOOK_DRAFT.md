@@ -23,6 +23,9 @@ Expected output includes:
 - receipt_hash (prefix)
 - replay_ok=True
 
+## Determinism Check
+Run the demo twice with the same seed and compare the hash prefixes.
+
 ## Conformance Runner
 ```bash
 PYTHONPATH="packages/conformance-v1/src" \
