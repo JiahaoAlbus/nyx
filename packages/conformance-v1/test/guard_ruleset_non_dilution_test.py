@@ -26,6 +26,10 @@ class RulesetNonDilutionTests(unittest.TestCase):
             "Q1-PRIV-01",
             "Q1-PLAT-01",
             "Q1-ANALYTICS-01",
+            "Q3-RT-01",
+            "Q3-RT-02",
+            "Q3-RT-03",
+            "Q3-RT-04",
         }
         ids = {rule.rule_id for rule in RULES}
         self.assertTrue(baseline_ids.issubset(ids))

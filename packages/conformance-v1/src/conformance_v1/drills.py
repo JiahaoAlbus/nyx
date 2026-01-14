@@ -32,6 +32,8 @@ def _ensure_paths() -> None:
         repo_root / "packages" / "l0-zk-id" / "src",
         repo_root / "packages" / "l2-economics" / "src",
         repo_root / "packages" / "l1-chain" / "src",
+        repo_root / "packages" / "l2-private-ledger" / "src",
+        repo_root / "packages" / "l0-reputation" / "src",
         repo_root / "packages" / kernel_dir / "src",
         repo_root / "packages" / "e2e-demo" / "src",
     ]
@@ -336,6 +338,126 @@ def drill_proof_tamper() -> DrillResult:
     return _pass("Q1-TRACE-03")
 
 
+def drill_skip_proof() -> DrillResult:
+    _ensure_paths()
+    from dataclasses import replace
+    from l2_private_ledger.actions import ActionKind, LedgerAction, PrivateMint
+    from l2_private_ledger.proof_wiring import (
+        DEFAULT_CONTEXT_ID,
+        prove_private_action_mock,
+        verify_private_action,
+    )
+    from l2_private_ledger.state import empty_state, state_root
+    from l2_private_ledger.types import sha256
+
+    state = empty_state()
+    commitment = sha256(b"pl-commitment")
+    action = LedgerAction(ActionKind.PRIVATE_MINT, PrivateMint(commitment))
+    nonce = sha256(b"pl-nonce")
+    envelope = prove_private_action_mock(
+        state,
+        action,
+        nonce,
+        witness={"note": "ok"},
+    )
+    tampered = replace(envelope, proof_bytes=b"")
+    if verify_private_action(tampered, state_root(state), action):
+        return _fail("Q3-RT-01", "missing proof accepted")
+    bad_context = sha256(b"pl-context-bad")
+    if verify_private_action(
+        envelope,
+        state_root(state),
+        action,
+        context_id=bad_context,
+    ):
+        return _fail("Q3-RT-01", "wrong context accepted")
+    if not verify_private_action(
+        envelope,
+        state_root(state),
+        action,
+        context_id=DEFAULT_CONTEXT_ID,
+    ):
+        return _fail("Q3-RT-01", "valid proof rejected")
+    return _pass("Q3-RT-01")
+
+
+def drill_skip_fee() -> DrillResult:
+    _ensure_paths()
+    from action import ActionKind as FeeActionKind
+    from engine import FeeEngineError, FeeEngineV0
+    from fee import FeeVector
+    from quote import FeePayment
+
+    from l2_private_ledger.actions import ActionKind, LedgerAction, PrivateMint
+    from l2_private_ledger.fee_binding import compute_action_hash, quote_fee_for_private_action
+    from l2_private_ledger.state import empty_state, state_root
+    from l2_private_ledger.types import sha256
+
+    engine = FeeEngineV0()
+    state = empty_state()
+    commitment = sha256(b"fee-commitment")
+    action = LedgerAction(ActionKind.PRIVATE_MINT, PrivateMint(commitment))
+    root = state_root(state)
+    action_hash = compute_action_hash(action)
+    quote = quote_fee_for_private_action(engine, action, root, action_hash, payer="payer-a")
+
+    components = list(quote.fee_vector.components)
+    base_component, base_amount = components[0]
+    components[0] = (base_component, base_amount + 1)
+    bad_vector = FeeVector.for_action(FeeActionKind.STATE_MUTATION, tuple(components))
+    payment = FeePayment(
+        payer=quote.payer,
+        quote_hash=quote.quote_hash,
+        paid_vector=bad_vector,
+    )
+    try:
+        engine.enforce(quote, payment)
+        return _fail("Q3-RT-02", "fee mismatch accepted")
+    except FeeEngineError:
+        return _pass("Q3-RT-02")
+
+
+def drill_nullifier_reuse() -> DrillResult:
+    _ensure_paths()
+    from l2_private_ledger.actions import ActionKind, LedgerAction, PrivateSpend
+    from l2_private_ledger.errors import DoubleSpendError
+    from l2_private_ledger.kernel import apply_action
+    from l2_private_ledger.state import empty_state
+    from l2_private_ledger.types import sha256
+
+    state = empty_state()
+    nullifier = sha256(b"reuse-nullifier")
+    action = LedgerAction(ActionKind.PRIVATE_SPEND, PrivateSpend(nullifier))
+    state = apply_action(state, action)
+    try:
+        _ = apply_action(state, action)
+        return _fail("Q3-RT-03", "nullifier reuse accepted")
+    except DoubleSpendError:
+        return _pass("Q3-RT-03")
+
+
+def drill_cross_context_link() -> DrillResult:
+    _ensure_paths()
+    from l0_reputation.disclosure_wiring import prove_rep_at_least_mock, verify_rep_at_least
+    from l0_reputation.hashing import sha256
+    from l0_reputation.kernel import new_pseudonym
+
+    rep_root = sha256(b"rep-root-ctx")
+    pseudo = new_pseudonym(sha256(b"rep-secret-ctx"))
+    nonce = sha256(b"rep-nonce-ctx")
+    envelope = prove_rep_at_least_mock(
+        rep_root=rep_root,
+        pseudonym_id=pseudo,
+        k=2,
+        nonce=nonce,
+        witness={"note": "ok"},
+    )
+    bad_context = sha256(b"rep-bad-context")
+    if verify_rep_at_least(envelope, rep_root, pseudo, 2, context_id=bad_context):
+        return _fail("Q3-RT-04", "cross-context verification accepted")
+    return _pass("Q3-RT-04")
+
+
 def run_drills() -> tuple[DrillResult, ...]:
     results: list[DrillResult] = []
     results.append(drill_id_sender_sep())
@@ -347,4 +469,8 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_trace_tamper())
     results.append(drill_fee_tamper())
     results.append(drill_proof_tamper())
+    results.append(drill_skip_proof())
+    results.append(drill_skip_fee())
+    results.append(drill_nullifier_reuse())
+    results.append(drill_cross_context_link())
     return tuple(results)
