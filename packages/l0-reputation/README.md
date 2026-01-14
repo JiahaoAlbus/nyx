@@ -13,6 +13,11 @@ Kernel v1 for pseudonymous reputation with deterministic roots and fee binding.
 - State mutation requires a non-zero fee
 - Sponsor changes payer only, never the amount
 
+## Disclosure wiring (mock)
+- Statements: REP_AT_LEAST, REP_TIER
+- Public inputs include rep_root, pseudonym_id, and v=1 plus k or tier
+- Verify path uses l0-zk-id verification (mock prover only for generation)
+
 ## Non-goals
 - UI or client workflows
 - Production cryptography claims
