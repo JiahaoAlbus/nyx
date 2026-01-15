@@ -42,4 +42,4 @@ def state_hash(state: DexState) -> bytes:
     return sha256(canonicalize(payload))
 MAX_AMOUNT = 10**12
 MAX_RESERVE = 10**12
-MAX_LP = 10**12
+MAX_LP = 2 * MAX_RESERVE
