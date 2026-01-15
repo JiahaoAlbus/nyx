@@ -1,6 +1,6 @@
-# NYX Q3 Frozen List
+# NYX Q3 Immutable Rules
 
-## Never Change (Frozen)
+## Never Change (Immutable)
 - Proof envelopes bind context, statement, nonce, and canonical public inputs.
 - Context separation is mandatory; wrong context must fail verification.
 - Nullifier reuse is forbidden and must fail deterministically.
