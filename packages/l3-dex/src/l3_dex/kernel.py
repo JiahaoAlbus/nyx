@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from .actions import AddLiquidity, CreatePool, RemoveLiquidity, Swap
+from .actions import ActionKind, AddLiquidity, CreatePool, RemoveLiquidity, Swap
 from .errors import ValidationError
 from .invariants import check_invariants
-from .state import DexState, PoolState
+from .receipts import DexReceipt, receipt_hash_for_payload
+from .state import DexState, PoolState, state_hash
 
 
 def _find_pool(state: DexState, pool_id: str) -> PoolState | None:
@@ -59,3 +60,53 @@ def apply_action(state: DexState, action) -> DexState:
         raise ValidationError("swap not available in v0 skeleton")
 
     raise ValidationError("unknown action")
+
+
+def _receipt_inputs(action) -> dict[str, object]:
+    if isinstance(action, CreatePool):
+        return {"asset_a": action.asset_a, "asset_b": action.asset_b}
+    if isinstance(action, AddLiquidity):
+        return {"amount_a": action.amount_a, "amount_b": action.amount_b}
+    if isinstance(action, RemoveLiquidity):
+        return {"lp_amount": action.lp_amount}
+    if isinstance(action, Swap):
+        return {
+            "amount_in": action.amount_in,
+            "min_out": action.min_out,
+            "asset_in": action.asset_in,
+        }
+    raise ValidationError("unknown action")
+
+
+_ACTION_KIND_MAP = {
+    CreatePool: ActionKind.CREATE_POOL,
+    AddLiquidity: ActionKind.ADD_LIQUIDITY,
+    RemoveLiquidity: ActionKind.REMOVE_LIQUIDITY,
+    Swap: ActionKind.SWAP,
+}
+
+
+def apply_action_with_receipt(state: DexState, action) -> tuple[DexState, DexReceipt]:
+    before_hash = state_hash(state)
+    new_state = apply_action(state, action)
+    after_hash = state_hash(new_state)
+    kind = _ACTION_KIND_MAP.get(type(action))
+    if kind is None:
+        raise ValidationError("unknown action")
+    payload = {
+        "action": kind.value,
+        "pool_id": action.pool_id,
+        "inputs": _receipt_inputs(action),
+        "before_hash": before_hash.hex(),
+        "after_hash": after_hash.hex(),
+        "v": 1,
+    }
+    receipt = DexReceipt(
+        action=kind,
+        pool_id=action.pool_id,
+        inputs=_receipt_inputs(action),
+        before_hash=before_hash,
+        after_hash=after_hash,
+        receipt_hash=receipt_hash_for_payload(payload),
+    )
+    return new_state, receipt
