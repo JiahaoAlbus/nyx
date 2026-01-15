@@ -38,6 +38,9 @@ Conformance runner with JSON output:
 PYTHONPATH="packages/conformance-v1/src" python -m conformance_v1.runner --out /tmp/nyx_conformance_report.json
 ```
 
+## Findings & Mitigations
+- 2026-Q4-W11: Added replay tamper regression test in `packages/l3-dex/test/unit_replay_rejects_tamper_test.py`.
+
 ## Freeze/Change Control
 - Follow `docs/CHANGE_CONTROL.md` for any post-freeze changes.
 - Patch-only or additive extensions only; no semantic changes.
