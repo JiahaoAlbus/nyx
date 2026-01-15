@@ -36,6 +36,14 @@ class RuleSetTests(unittest.TestCase):
             "Q1-PRIV-01",
             "Q1-PLAT-01",
             "Q1-ANALYTICS-01",
+            "Q4-DEX-01",
+            "Q4-DEX-02",
+            "Q4-DEX-03",
+            "Q4-DEX-04",
+            "Q4-DEX-05",
+            "Q4-DEX-06",
+            "Q4-BRIDGE-01",
+            "Q4-ONOFF-01",
         }
         self.assertEqual(expected_ids, {rule.rule_id for rule in RULES})
 

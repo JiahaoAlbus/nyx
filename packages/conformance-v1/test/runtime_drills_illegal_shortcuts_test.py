@@ -15,6 +15,18 @@ class RuntimeDrillTests(unittest.TestCase):
         results = run_drills()
         failures = [result for result in results if not result.passed]
         self.assertEqual(failures, [])
+        expected_ids = {
+            "Q4-DEX-01",
+            "Q4-DEX-02",
+            "Q4-DEX-03",
+            "Q4-DEX-04",
+            "Q4-DEX-05",
+            "Q4-DEX-06",
+            "Q4-BRIDGE-01",
+            "Q4-ONOFF-01",
+        }
+        result_ids = {result.rule_id for result in results}
+        self.assertTrue(expected_ids.issubset(result_ids))
 
 
 if __name__ == "__main__":

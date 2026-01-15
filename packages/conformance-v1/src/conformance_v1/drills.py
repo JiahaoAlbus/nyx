@@ -33,6 +33,7 @@ def _ensure_paths() -> None:
         repo_root / "packages" / "l2-economics" / "src",
         repo_root / "packages" / "l1-chain" / "src",
         repo_root / "packages" / kernel_dir / "src",
+        repo_root / "packages" / "l3-dex" / "src",
         repo_root / "packages" / "e2e-demo" / "src",
     ]
     for path in paths:
@@ -276,6 +277,69 @@ def _tamper_trace(trace, mutator) -> object:
     return E2ETrace.from_json(raw)
 
 
+def _flip_last_byte(value: bytes) -> bytes:
+    if not isinstance(value, (bytes, bytearray)) or not value:
+        raise ValueError("bytes required")
+    raw = bytearray(value)
+    raw[-1] ^= 1
+    return bytes(raw)
+
+
+def _iter_source_files(root: Path) -> list[Path]:
+    packages_dir = root / "packages"
+    if not packages_dir.exists():
+        return []
+    files: list[Path] = []
+    for package_dir in packages_dir.iterdir():
+        if not package_dir.is_dir():
+            continue
+        if package_dir.name == "conformance-v1":
+            continue
+        src_dir = package_dir / "src"
+        if not src_dir.exists():
+            continue
+        files.extend(src_dir.rglob("*.py"))
+    return files
+
+
+def _scan_for_tokens(tokens: tuple[str, ...]) -> list[str]:
+    repo_root = Path(__file__).resolve().parents[4]
+    findings: list[str] = []
+    lowered = tuple(token.lower() for token in tokens)
+    for path in _iter_source_files(repo_root):
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for line_no, line in enumerate(content.splitlines(), start=1):
+            line_lower = line.lower()
+            for token in lowered:
+                if token in line_lower:
+                    findings.append(f"{path}:{line_no}:{token}")
+    return findings
+
+
+def _payload_contains_token(payload: dict[str, object], tokens: tuple[str, ...]) -> bool:
+    lowered = tuple(token.lower() for token in tokens)
+    stack = [payload]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            for key, value in current.items():
+                if isinstance(key, str):
+                    key_lower = key.lower()
+                    if any(token in key_lower for token in lowered):
+                        return True
+                stack.append(value)
+        elif isinstance(current, list):
+            stack.extend(current)
+        elif isinstance(current, str):
+            value_lower = current.lower()
+            if any(token in value_lower for token in lowered):
+                return True
+    return False
+
+
 def drill_trace_tamper() -> DrillResult:
     _ensure_paths()
     from e2e_demo.pipeline import run_e2e
@@ -336,6 +400,155 @@ def drill_proof_tamper() -> DrillResult:
     return _pass("Q1-TRACE-03")
 
 
+def _build_dex_receipt():
+    from l3_dex.actions import AddLiquidity, CreatePool
+    from l3_dex.kernel import apply_action_with_receipt
+    from l3_dex.state import DexState
+
+    state0 = DexState(pools=())
+    state1, _ = apply_action_with_receipt(
+        state0,
+        CreatePool(pool_id="p", asset_a="A", asset_b="B"),
+    )
+    state2, receipt = apply_action_with_receipt(
+        state1,
+        AddLiquidity(pool_id="p", amount_a=10, amount_b=12),
+    )
+    return state1, state2, receipt
+
+
+def drill_dex_skip_fee() -> DrillResult:
+    _ensure_paths()
+    from action import ActionKind
+    from engine import FeeEngineV0, FeeEngineError
+    from fee import FeeComponentId, FeeVector
+    from quote import FeePayment
+
+    from l3_dex.actions import CreatePool
+    from l3_dex.fee_binding import quote_fee_for_action
+    from l3_dex.state import DexState
+
+    engine = FeeEngineV0()
+    state = DexState(pools=())
+    action = CreatePool(pool_id="p", asset_a="A", asset_b="B")
+    quote = quote_fee_for_action(engine, state, action, payer="payer")
+    try:
+        bad_vector = FeeVector.for_action(
+            ActionKind.STATE_MUTATION,
+            (
+                (FeeComponentId.BASE, 1),
+                (FeeComponentId.BYTES, 0),
+                (FeeComponentId.COMPUTE, 0),
+            ),
+        )
+        payment = FeePayment(
+            payer=quote.payer,
+            quote_hash=quote.quote_hash,
+            paid_vector=bad_vector,
+        )
+        engine.enforce(quote, payment)
+        return _fail("Q4-DEX-01", "fee enforcement accepted mismatched vector")
+    except FeeEngineError:
+        return _pass("Q4-DEX-01")
+
+
+def drill_dex_tamper_reserves() -> DrillResult:
+    _ensure_paths()
+    from dataclasses import replace
+    from l3_dex.errors import ValidationError
+    from l3_dex.replay import replay_receipt
+
+    state_before, _, receipt = _build_dex_receipt()
+    tampered = replace(receipt, after_hash=_flip_last_byte(receipt.after_hash))
+    try:
+        replay_receipt(state_before, tampered)
+        return _fail("Q4-DEX-02", "tampered after_hash replayed")
+    except ValidationError:
+        return _pass("Q4-DEX-02")
+
+
+def drill_dex_receipt_tamper() -> DrillResult:
+    _ensure_paths()
+    from dataclasses import replace
+    from l3_dex.errors import ValidationError
+    from l3_dex.replay import replay_receipt
+
+    state_before, _, receipt = _build_dex_receipt()
+    tampered = replace(receipt, receipt_hash=_flip_last_byte(receipt.receipt_hash))
+    try:
+        replay_receipt(state_before, tampered)
+        return _fail("Q4-DEX-03", "tampered receipt hash replayed")
+    except ValidationError:
+        return _pass("Q4-DEX-03")
+
+
+def drill_dex_replay_mutation() -> DrillResult:
+    _ensure_paths()
+    from l3_dex.errors import ValidationError
+    from l3_dex.replay import replay_receipt
+
+    _, state_after, receipt = _build_dex_receipt()
+    try:
+        replay_receipt(state_after, receipt)
+        return _fail("Q4-DEX-04", "replay accepted with wrong state")
+    except ValidationError:
+        return _pass("Q4-DEX-04")
+
+
+def drill_dex_account_semantics() -> DrillResult:
+    _ensure_paths()
+    _, _, receipt = _build_dex_receipt()
+    tokens = ("owner", "account", "address", "sender")
+    if _payload_contains_token(receipt.payload_dict(), tokens):
+        return _fail("Q4-DEX-05", "receipt contains account-like token")
+    return _pass("Q4-DEX-05")
+
+
+def drill_dex_boundary_abuse() -> DrillResult:
+    _ensure_paths()
+    from l3_dex.actions import AddLiquidity, CreatePool
+    from l3_dex.errors import ValidationError
+    from l3_dex.kernel import apply_action
+    from l3_dex.state import DexState, MAX_AMOUNT
+
+    state = DexState(pools=())
+    state = apply_action(state, CreatePool(pool_id="p", asset_a="A", asset_b="B"))
+    try:
+        apply_action(state, AddLiquidity(pool_id="p", amount_a=MAX_AMOUNT + 1, amount_b=1))
+        return _fail("Q4-DEX-06", "boundary overflow accepted")
+    except ValidationError:
+        return _pass("Q4-DEX-06")
+
+
+def drill_bridge_adapter_trust() -> DrillResult:
+    _ensure_paths()
+    tokens = (
+        "trusted_adapter",
+        "adapter_trust",
+        "bridge_admin",
+        "bridge_trust",
+    )
+    findings = _scan_for_tokens(tokens)
+    if findings:
+        return _fail("Q4-BRIDGE-01", findings[0])
+    return _pass("Q4-BRIDGE-01")
+
+
+def drill_onoff_shortcut() -> DrillResult:
+    _ensure_paths()
+    tokens = (
+        "skip_fee",
+        "skip_verify",
+        "debug_free",
+        "free_lane",
+        "fee_waive",
+    )
+    findings = _scan_for_tokens(tokens)
+    if findings:
+        return _fail("Q4-ONOFF-01", findings[0])
+    return _pass("Q4-ONOFF-01")
+
+
 def run_drills() -> tuple[DrillResult, ...]:
     results: list[DrillResult] = []
     results.append(drill_id_sender_sep())
@@ -347,4 +560,12 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_trace_tamper())
     results.append(drill_fee_tamper())
     results.append(drill_proof_tamper())
+    results.append(drill_dex_skip_fee())
+    results.append(drill_dex_tamper_reserves())
+    results.append(drill_dex_receipt_tamper())
+    results.append(drill_dex_replay_mutation())
+    results.append(drill_dex_account_semantics())
+    results.append(drill_dex_boundary_abuse())
+    results.append(drill_bridge_adapter_trust())
+    results.append(drill_onoff_shortcut())
     return tuple(results)
