@@ -25,44 +25,90 @@ def _flip_hex_byte(hex_value: str) -> str:
     return bytes(data).hex()
 
 
+def _truncate_hex(hex_value: str) -> str:
+    if len(hex_value) <= 2:
+        return hex_value
+    return hex_value[:-2]
+
+
+def _swap_hex_halves(hex_value: str) -> str:
+    mid = len(hex_value) // 2
+    return hex_value[mid:] + hex_value[:mid]
+
+
+def _append_case(cases: list[dict], base: dict, mutator) -> None:
+    payload = copy.deepcopy(base)
+    mutator(payload)
+    cases.append(payload)
+
+
+def _tamper_hex_field(cases: list[dict], base: dict, path: tuple[str, ...]) -> None:
+    def get_ref(payload: dict) -> dict:
+        node = payload
+        for key in path[:-1]:
+            node = node[key]
+        return node
+
+    def flip(payload: dict) -> None:
+        node = get_ref(payload)
+        node[path[-1]] = _flip_hex_byte(node[path[-1]])
+
+    def truncate(payload: dict) -> None:
+        node = get_ref(payload)
+        node[path[-1]] = _truncate_hex(node[path[-1]])
+
+    def swap(payload: dict) -> None:
+        node = get_ref(payload)
+        node[path[-1]] = _swap_hex_halves(node[path[-1]])
+
+    for mutator in (flip, truncate, swap):
+        _append_case(cases, base, mutator)
+
+
+def _tamper_fee_components(cases: list[dict], base: dict) -> None:
+    def flip(payload: dict) -> None:
+        components = payload["fee"]["components"]
+        components[0]["amount"] = int(components[0]["amount"]) + 1
+
+    def truncate(payload: dict) -> None:
+        components = payload["fee"]["components"]
+        payload["fee"]["components"] = components[:-1]
+
+    def swap(payload: dict) -> None:
+        components = payload["fee"]["components"]
+        if len(components) >= 2:
+            components[0]["component"], components[1]["component"] = (
+                components[1]["component"],
+                components[0]["component"],
+            )
+        else:
+            components[0]["component"] = "compute"
+
+    for mutator in (flip, truncate, swap):
+        _append_case(cases, base, mutator)
+
+
 class TamperMatrixTests(unittest.TestCase):
     def test_tamper_matrix(self):
         trace, _ = run_private_transfer(seed=123)
         base = trace.to_dict()
 
-        cases = []
+        cases: list[dict] = []
 
-        proof_bytes = copy.deepcopy(base)
-        proof_bytes["proof"]["proof_bytes_hex"] = _flip_hex_byte(
-            proof_bytes["proof"]["proof_bytes_hex"]
-        )
-        cases.append(proof_bytes)
-
-        binding_tag = copy.deepcopy(base)
-        binding_tag["proof"]["binding_tag_hex"] = _flip_hex_byte(
-            binding_tag["proof"]["binding_tag_hex"]
-        )
-        cases.append(binding_tag)
-
-        fee_vector = copy.deepcopy(base)
-        components = fee_vector["fee"]["components"]
-        components[0]["amount"] = int(components[0]["amount"]) + 1
-        cases.append(fee_vector)
-
-        receipt_hash = copy.deepcopy(base)
-        receipt_hash["fee"]["receipt_hash_hex"] = _flip_hex_byte(
-            receipt_hash["fee"]["receipt_hash_hex"]
-        )
-        cases.append(receipt_hash)
-
-        payload = copy.deepcopy(base)
-        payload["chain"]["payload_hex"] = _flip_hex_byte(payload["chain"]["payload_hex"])
-        cases.append(payload)
+        _tamper_hex_field(cases, base, ("proof", "proof_bytes_hex"))
+        _tamper_hex_field(cases, base, ("proof", "binding_tag_hex"))
+        _tamper_fee_components(cases, base)
+        _tamper_hex_field(cases, base, ("fee", "receipt_hash_hex"))
+        _tamper_hex_field(cases, base, ("chain", "payload_hex"))
 
         for index, payload_case in enumerate(cases):
             with self.subTest(index=index):
-                tampered = TransferTrace.from_dict(payload_case)
-                self.assertFalse(replay_and_verify(tampered))
+                try:
+                    tampered = TransferTrace.from_dict(payload_case)
+                    result = replay_and_verify(tampered)
+                except Exception:
+                    result = False
+                self.assertFalse(result)
 
 
 if __name__ == "__main__":

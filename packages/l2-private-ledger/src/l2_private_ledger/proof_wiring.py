@@ -28,6 +28,8 @@ except Exception as exc:  # pragma: no cover - handled at runtime
 
 DEFAULT_CONTEXT_ID = sha256(b"NYX:CTX:Q3:PRIVATE_LEDGER:v1")
 DEFAULT_STATEMENT_ID = "NYX:STATEMENT:PRIVATE_LEDGER_ACTION:v1"
+MAX_PUBLIC_INPUT_DEPTH = 20
+MAX_PUBLIC_INPUT_BYTES = 65_536
 
 
 def compute_action_hash(action: LedgerAction) -> bytes:
@@ -85,7 +87,11 @@ def validate_public_inputs_shape(public_inputs: dict[str, object]) -> None:
         raise ValidationError("public_inputs must be dict")
     _validate_jsonlike(public_inputs)
     try:
-        canonicalize(public_inputs)
+        canonicalize(
+            public_inputs,
+            max_depth=MAX_PUBLIC_INPUT_DEPTH,
+            max_bytes=MAX_PUBLIC_INPUT_BYTES,
+        )
     except CanonicalizationError as exc:
         raise ValidationError(str(exc)) from exc
 
