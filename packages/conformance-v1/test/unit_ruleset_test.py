@@ -36,6 +36,12 @@ class RuleSetTests(unittest.TestCase):
             "Q1-PRIV-01",
             "Q1-PLAT-01",
             "Q1-ANALYTICS-01",
+            "Q5-ROUTER-01",
+            "Q5-ROUTER-02",
+            "Q5-ROUTER-03",
+            "Q5-ROUTER-04",
+            "Q5-CLIENT-01",
+            "Q5-OPS-01",
         }
         self.assertEqual(expected_ids, {rule.rule_id for rule in RULES})
 
