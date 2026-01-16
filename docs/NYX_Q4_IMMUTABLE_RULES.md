@@ -15,7 +15,7 @@ Record immutable DEX v0 rules and allowed extensions.
 - Proof context separation MUST reject wrong context and statement.
 - Client signing material MUST NOT define identity semantics.
 - Receipts MUST be deterministic and replayable.
-- No privileged override paths are permitted.
+- No unauthorized override paths are permitted.
 
 ## Allowed Extensions
 - Add new actions only by creating a new versioned protocol.
@@ -23,13 +23,13 @@ Record immutable DEX v0 rules and allowed extensions.
 - Add new drills and tests without removing existing ones.
 
 ## Break-Glass Conditions (Patch Only)
-- A patch MUST be zero semantic change and include a regression test.
+- A patch MUST be zero semantic change and include a regression test or drill.
 - Any semantic change requires a new version and deployment.
 
 ## Evidence / Verification
 - Determinism: `packages/l3-dex/test/golden_vectors_test.py`.
 - Invariants: `packages/l3-dex/test/property_invariants_test.py`.
-- Conformance drills: `packages/conformance-v1/test/runtime_drills_v3_test.py`.
+- Conformance drills: `packages/conformance-v1/test/runtime_drills_illegal_shortcuts_test.py`.
 
 ## Freeze / Change Control
 - See `docs/CHANGE_CONTROL.md`.
