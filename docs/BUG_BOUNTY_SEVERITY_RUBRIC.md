@@ -22,6 +22,12 @@ Define objective severity levels for Q5 reports.
 - Medium: Denial of service or bounds bypass without state loss.
 - Low: Non-sensitive correctness issues without state impact.
 
+## Response Targets
+- Critical: remediation plan within 10 business days.
+- High: remediation plan within 10 business days.
+- Medium: remediation plan within 20 business days.
+- Low: remediation plan within 30 business days.
+
 ## Evidence / Verification
 - Provide reproduction commands and minimal inputs.
 - Reference failing tests or drills.
