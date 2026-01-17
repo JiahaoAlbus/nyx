@@ -1,6 +1,6 @@
 # Mainnet Launch Checklist
 
-Status: Go/No-Go
+Status: No-Go (Q5 RC pending)
 
 ## Purpose
 Define objective Go/No-Go criteria for the DEX v0 launch process.
@@ -52,6 +52,7 @@ Record:
 - Semantic changes require a new protocol version and deployment.
 
 ## Status (Fill at Release)
-- Status: Go | No-Go
+- Status: No-Go
 - Blocking items (if No-Go):
-  - 
+  - Release window not executed.
+  - Mainnet tag not authorized.
