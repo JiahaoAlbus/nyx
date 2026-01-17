@@ -28,6 +28,8 @@ Invariant → Evidence
 - No account binding semantics
   - Tests: conformance drills (Week08)
 - Fee enforcement for mutations
+  - Tests: packages/l3-router/test/unit_fee_nonzero_test.py
+  - Tests: packages/l3-router/test/unit_sponsor_equivalence_test.py
   - Tests: fee bypass drills (Week06)
 - Replay tamper rejection
   - Tests: conformance drills (Week08)
