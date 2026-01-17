@@ -37,3 +37,6 @@ Evidence / Verification
 Freeze / Change Control
 - Router v1 meaning is sealed after Week07; see `docs/DEX_V1_ROUTER_BLUEPRINT.md`.
 - Changes follow `docs/CHANGE_CONTROL.md`.
+
+Findings & Mitigations
+- 2027-Q1-W11: Added router invalid-swap rejection regression tests (no code change).
