@@ -5,6 +5,7 @@ import importlib
 import io
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 from conformance_v1.model import DrillResult
@@ -33,7 +34,10 @@ def _ensure_paths() -> None:
         repo_root / "packages" / "l2-economics" / "src",
         repo_root / "packages" / "l1-chain" / "src",
         repo_root / "packages" / kernel_dir / "src",
+        repo_root / "packages" / "l3-dex" / "src",
+        repo_root / "packages" / "l3-router" / "src",
         repo_root / "packages" / "e2e-demo" / "src",
+        repo_root / "apps" / "nyx-reference-client" / "src",
     ]
     for path in paths:
         path_str = str(path)
@@ -267,6 +271,13 @@ def _tamper_hex(hex_str: str) -> str:
     return hex_str[:-1] + replacement
 
 
+def _tamper_bytes(value: bytes) -> bytes:
+    if not value:
+        raise ValueError("bytes required")
+    last = value[-1] ^ 0x01
+    return value[:-1] + bytes([last])
+
+
 def _tamper_trace(trace, mutator) -> object:
     payload = json.loads(trace.to_json())
     mutator(payload)
@@ -336,6 +347,210 @@ def drill_proof_tamper() -> DrillResult:
     return _pass("Q1-TRACE-03")
 
 
+def _router_seed_state():
+    from l3_dex.state import DexState, PoolState
+    from l3_router.state import RouterState
+
+    pool = PoolState(
+        pool_id="pool-0",
+        asset_a="ASSET_A",
+        asset_b="ASSET_B",
+        reserve_a=1_000_000,
+        reserve_b=2_000_000,
+        total_lp=3_000_000,
+    )
+    return RouterState(dex_state=DexState(pools=(pool,)))
+
+
+def _router_steps():
+    from l3_dex.actions import Swap as DexSwap
+
+    return (
+        DexSwap(pool_id="pool-0", amount_in=100, min_out=0, asset_in="ASSET_A"),
+        DexSwap(pool_id="pool-0", amount_in=150, min_out=0, asset_in="ASSET_B"),
+    )
+
+
+def _router_action(steps):
+    from l3_router.actions import RouteSwap, RouterAction, RouterActionKind
+
+    return RouterAction(kind=RouterActionKind.ROUTE_SWAP, payload=RouteSwap(steps=steps))
+
+
+def drill_router_receipt_tamper() -> DrillResult:
+    _ensure_paths()
+    from l3_router.errors import ReplayError
+    from l3_router.kernel import apply_route
+    from l3_router.receipts import RouterReceipt
+    from l3_router.replay import replay_route
+
+    state = _router_seed_state()
+    steps = _router_steps()
+    action = _router_action(steps)
+    _, receipt = apply_route(state, action)
+
+    tampered = RouterReceipt(
+        action=receipt.action,
+        state_hash=_tamper_bytes(receipt.state_hash),
+        steps=receipt.steps,
+        step_receipts=receipt.step_receipts,
+    )
+    try:
+        replay_route(state, tampered)
+        return _fail("Q5-ROUTER-01", "tampered receipt replayed")
+    except ReplayError:
+        return _pass("Q5-ROUTER-01")
+    except Exception as exc:
+        return _fail("Q5-ROUTER-01", f"unexpected exception: {type(exc).__name__}")
+
+
+def drill_router_replay_tamper() -> DrillResult:
+    _ensure_paths()
+    from l3_dex.actions import Swap as DexSwap
+    from l3_router.errors import ReplayError
+    from l3_router.kernel import apply_route
+    from l3_router.receipts import RouterReceipt
+    from l3_router.replay import replay_route
+
+    state = _router_seed_state()
+    steps = _router_steps()
+    action = _router_action(steps)
+    _, receipt = apply_route(state, action)
+
+    tampered_steps = (
+        DexSwap(pool_id="pool-0", amount_in=101, min_out=0, asset_in="ASSET_A"),
+        steps[1],
+    )
+    tampered = RouterReceipt(
+        action=receipt.action,
+        state_hash=receipt.state_hash,
+        steps=tampered_steps,
+        step_receipts=receipt.step_receipts,
+    )
+    try:
+        replay_route(state, tampered)
+        return _fail("Q5-ROUTER-02", "tampered steps replayed")
+    except ReplayError:
+        return _pass("Q5-ROUTER-02")
+    except Exception as exc:
+        return _fail("Q5-ROUTER-02", f"unexpected exception: {type(exc).__name__}")
+
+
+def drill_router_forged_steps() -> DrillResult:
+    _ensure_paths()
+    from l3_dex.receipts import DexReceipt
+    from l3_router.errors import ReplayError
+    from l3_router.kernel import apply_route
+    from l3_router.receipts import RouterReceipt
+    from l3_router.replay import replay_route
+
+    state = _router_seed_state()
+    steps = _router_steps()
+    action = _router_action(steps)
+    _, receipt = apply_route(state, action)
+
+    forged = DexReceipt(
+        action=receipt.step_receipts[0].action,
+        pool_id="pool-x",
+        state_hash=receipt.step_receipts[0].state_hash,
+    )
+    tampered = RouterReceipt(
+        action=receipt.action,
+        state_hash=receipt.state_hash,
+        steps=receipt.steps,
+        step_receipts=(forged,) + receipt.step_receipts[1:],
+    )
+    try:
+        replay_route(state, tampered)
+        return _fail("Q5-ROUTER-03", "forged step receipt replayed")
+    except ReplayError:
+        return _pass("Q5-ROUTER-03")
+    except Exception as exc:
+        return _fail("Q5-ROUTER-03", f"unexpected exception: {type(exc).__name__}")
+
+
+def drill_router_account_injection() -> DrillResult:
+    _ensure_paths()
+    from l3_dex.actions import Swap as DexSwap
+    from l3_router.actions import RouteSwap, RouterAction, RouterActionKind
+
+    try:
+        _ = DexSwap(
+            pool_id="pool-0",
+            amount_in=10,
+            min_out=0,
+            asset_in="ASSET_A",
+            account_tag="acct-1",
+        )
+        return _fail("Q5-ROUTER-04", "account field accepted in swap")
+    except TypeError:
+        pass
+
+    try:
+        _ = RouterAction(
+            kind=RouterActionKind.ROUTE_SWAP,
+            payload=RouteSwap(steps=_router_steps()),
+            account_tag="acct-1",
+        )
+        return _fail("Q5-ROUTER-04", "account field accepted in router action")
+    except TypeError:
+        return _pass("Q5-ROUTER-04")
+
+
+def _client_report_from_payload(payload: dict):
+    from nyx_reference_client.models import ClientReport, PoolSnapshot, RouteStepView, StepResult
+
+    pool = PoolSnapshot(**payload["pool"])
+    steps = tuple(RouteStepView(**step) for step in payload["steps"])
+    step_panel = tuple(StepResult(**entry) for entry in payload["step_panel"])
+    return ClientReport(
+        pool=pool,
+        steps=steps,
+        step_panel=step_panel,
+        state_hash_hex=payload["state_hash_hex"],
+        receipt_chain_hex=payload["receipt_chain_hex"],
+    )
+
+
+def drill_client_report_tamper() -> DrillResult:
+    _ensure_paths()
+    from nyx_reference_client.app import replay_and_verify, run_client
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_path = Path(tmpdir) / "report.json"
+        run_client(seed=123, out_path=str(out_path), steps=2)
+        payload = json.loads(out_path.read_text(encoding="utf-8"))
+        payload["state_hash_hex"] = _tamper_hex(payload["state_hash_hex"])
+        report = _client_report_from_payload(payload)
+        if replay_and_verify(report):
+            return _fail("Q5-CLIENT-01", "tampered report replayed")
+        return _pass("Q5-CLIENT-01")
+
+
+def _validate_bounty_submission(payload: dict) -> None:
+    required = ("report_id", "severity", "summary", "evidence")
+    for key in required:
+        if key not in payload:
+            raise ValueError("missing field")
+    if not isinstance(payload["evidence"], dict):
+        raise ValueError("evidence must be dict")
+
+
+def drill_ops_invalid_evidence() -> DrillResult:
+    _ensure_paths()
+    bad_payload = {
+        "report_id": "R-1",
+        "severity": "high",
+        "summary": "missing evidence dict",
+        "evidence": "not-a-dict",
+    }
+    try:
+        _validate_bounty_submission(bad_payload)
+        return _fail("Q5-OPS-01", "invalid evidence accepted")
+    except ValueError:
+        return _pass("Q5-OPS-01")
+
+
 def run_drills() -> tuple[DrillResult, ...]:
     results: list[DrillResult] = []
     results.append(drill_id_sender_sep())
@@ -347,4 +562,10 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_trace_tamper())
     results.append(drill_fee_tamper())
     results.append(drill_proof_tamper())
+    results.append(drill_router_receipt_tamper())
+    results.append(drill_router_replay_tamper())
+    results.append(drill_router_forged_steps())
+    results.append(drill_router_account_injection())
+    results.append(drill_client_report_tamper())
+    results.append(drill_ops_invalid_evidence())
     return tuple(results)
