@@ -1,0 +1,13 @@
+{
+  "command": "python packages/e2e-private-transfer/src/e2e_private_transfer/run_demo.py --out /tmp/nyx_q6_private_trace.json --seed 123",
+  "fields": {
+    "block_hash_prefix": "5d6a7bb290f4",
+    "fee_total": 390,
+    "receipt_hash_prefix": "6b9e84d92d66",
+    "replay_ok": true,
+    "state_root_prefix": "b7e876a7e0b2",
+    "tx_hash_prefix": "5ef0ff12c065"
+  },
+  "seed": 123,
+  "stdout": "fee_total=390 tx_hash=5ef0ff12c065 block_hash=5d6a7bb290f4 state_root=b7e876a7e0b2 receipt_hash=6b9e84d92d66 replay_ok=True"
+}
