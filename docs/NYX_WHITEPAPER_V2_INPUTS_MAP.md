@@ -79,7 +79,7 @@ Version Anchor
 - `conformance/ROADMAP.md` — Normative Spec — Title: Conformance Roadmap.
 - `conformance/frozen-manifest.sha256` — Operations — Conformance data or rule manifest.
 - `conformance/frozen-verify.sh` — Operations — Conformance gate script used by CI and local checks.
-- `conformance/rules/Q1-001.md` — Normative Spec — Title: Q1-001 Wallet is not identity.
+- `conformance/rules/Q1-001.md` — Normative Spec — Title: Q1-001 account not equal to identity.
 - `conformance/rules/Q1-002.md` — Normative Spec — Title: Q1-002 No privileged fee exemptions.
 - `conformance/rules/Q1-003.md` — Normative Spec — Title: Q1-003 Web2 is not a source of truth.
 - `conformance/rules/Q1-004.md` — Normative Spec — Title: Q1-004 No trusted administrators.
