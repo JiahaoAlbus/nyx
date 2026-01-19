@@ -14,10 +14,10 @@ MUST and MUST NOT
 - The final state MUST NOT include secrets or sensitive material.
 
 Final Summary
-- Status: Go-ready (tag pending)
+- Status: Go
 - Date (UTC): 2026-01-19
 - Operator: local execution (no CI)
-- Tag decision: Mainnet (authorized; tag pending after evidence PR merge)
+- Tag decision: Mainnet (tag `mainnet-1.0` created)
 
 Canonical Verification Command
 - `python -m compileall packages/l0-identity/src`
@@ -29,9 +29,11 @@ Evidence / Verification
 - Demo evidence: `docs/execution/q6_demo_out.txt`, `docs/execution/q6_e2e_demo_trace.json`
 
 Mainnet Tag Commands (maintainer)
-- `git checkout main && git pull`
-- `git tag -a mainnet-1.0 -m "NYX mainnet-1.0 (sealed semantics; evidence in docs/execution)"`
-- `git push origin mainnet-1.0`
+- Executed:
+  - `git tag -a mainnet-1.0 -m "NYX mainnet-1.0 (sealed semantics; evidence in docs/execution)" 9e795f461931301344445286e463ce2450fc9a6c`
+  - `git push origin mainnet-1.0`
+- Tag object SHA: `3cca7378cfab588ce3a5fad0da93b3995df8b1de`
+- Tagged commit: `9e795f461931301344445286e463ce2450fc9a6c`
 
 Freeze / Change Control
 - Execution-only report; no protocol changes.

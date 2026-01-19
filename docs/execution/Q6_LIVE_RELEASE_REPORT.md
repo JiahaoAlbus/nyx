@@ -17,7 +17,7 @@ Release Summary
 - Status: Executed (evidence captured)
 - Date (UTC): 2026-01-19
 - Operator: local execution (no CI)
-- Tag decision: Mainnet (authorized; tag pending after evidence PR merge)
+- Tag decision: Mainnet (tag `mainnet-1.0` created)
 
 Executed Steps
 - Step: Compile
@@ -40,6 +40,10 @@ Executed Steps
 Evidence / Verification
 - Canonical commands are listed in `docs/AUDIT_REPRO_COMMANDS.md`.
 - Demo trace summary: `docs/execution/q6_e2e_demo_trace.json` (sha256 `8f4abee0fabef51ea7e79137b576cf4c7e8bb6a8b6f80775d090fb36684ad6ed`)
+- Tag evidence:
+  - Tag: `mainnet-1.0`
+  - Tag object SHA: `3cca7378cfab588ce3a5fad0da93b3995df8b1de`
+  - Tagged commit: `9e795f461931301344445286e463ce2450fc9a6c`
 
 Freeze / Change Control
 - Execution-only report; no protocol changes.

@@ -14,8 +14,10 @@ MUST and MUST NOT
 - Notes MUST NOT include secrets or sensitive material.
 
 Release Notes
-- Status: Go-ready (tag pending after evidence PR merge)
-- Tagged commit: pending
+- Status: Go (tag created)
+- Tag: `mainnet-1.0`
+- Tag object SHA: `3cca7378cfab588ce3a5fad0da93b3995df8b1de`
+- Tagged commit: `9e795f461931301344445286e463ce2450fc9a6c`
 - Evidence summary:
   - Tests OK: `Ran 262 tests in 16.055s` (see `docs/execution/Q6_SECURITY_GATE_REPORT.md`)
   - Conformance: `conformance ok` with report `/tmp/nyx_conformance_report.json`

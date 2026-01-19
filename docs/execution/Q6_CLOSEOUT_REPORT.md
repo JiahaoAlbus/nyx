@@ -14,7 +14,7 @@ MUST and MUST NOT
 - The report MUST NOT include secrets or sensitive material.
 
 Closeout Summary
-- Status: Completed (evidence captured)
+- Status: Completed (evidence captured; tag created)
 - Date (UTC): 2026-01-19
 - Operator: local execution (no CI)
 - Completed items:
@@ -23,7 +23,7 @@ Closeout Summary
   - Security gate report populated with evidence hashes.
   - Disclosure and bounty evidence documented.
 - Outstanding items:
-  - Mainnet tag push after evidence PR merge.
+  - None.
 
 Evidence / Verification
 - Reference Q6 execution artifacts in `docs/execution/`.

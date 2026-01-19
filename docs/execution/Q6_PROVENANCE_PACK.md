@@ -16,6 +16,8 @@ MUST and MUST NOT
 Release Anchor
 - HEAD: `9e795f461931301344445286e463ce2450fc9a6c`
 - Describe: `testnet-0.2-68-g9e795f4`
+- Mainnet tag: `mainnet-1.0`
+- Tag object SHA: `3cca7378cfab588ce3a5fad0da93b3995df8b1de`
 
 Provenance Entries
 - Artifact: `/tmp/q6_compileall.txt`
