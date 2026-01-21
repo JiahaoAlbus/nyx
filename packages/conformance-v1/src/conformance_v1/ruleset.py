@@ -60,6 +60,16 @@ RULES: tuple[Rule, ...] = (
         repro_command=REPRO_COMMAND,
     ),
     Rule(
+        rule_id="Q7-FEE-PLAT-01",
+        adversary_class=("External Hackers",),
+        attack_vector="platform fee skip attempt",
+        surface="Economic Layer",
+        severity="HIGH",
+        rationale="Platform fee is additive and must not reduce protocol fees.",
+        detection=DETECTION_RUNTIME,
+        repro_command=REPRO_COMMAND,
+    ),
+    Rule(
         rule_id="Q1-ZK-01",
         adversary_class=("Onchain Analytics Firms", "External Hackers"),
         attack_vector="cross-context proof reuse",

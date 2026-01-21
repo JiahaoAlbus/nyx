@@ -32,6 +32,7 @@ def _ensure_paths() -> None:
         repo_root / "packages" / id_dir / "src",
         repo_root / "packages" / "l0-zk-id" / "src",
         repo_root / "packages" / "l2-economics" / "src",
+        repo_root / "packages" / "l2-platform-fee" / "src",
         repo_root / "packages" / "l1-chain" / "src",
         repo_root / "packages" / kernel_dir / "src",
         repo_root / "packages" / "l3-dex" / "src",
@@ -190,6 +191,58 @@ def drill_fee_sponsor_amount() -> DrillResult:
         pass
 
     return _pass("Q1-FEE-02")
+
+
+def drill_platform_fee_additive() -> DrillResult:
+    _ensure_paths()
+    from action import ActionDescriptor, ActionKind
+    from engine import FeeEngineV0
+    from fee import FeeComponentId, FeeVector
+    from l2_platform_fee.fee_hook import enforce_platform_fee, quote_platform_fee
+    from l2_platform_fee.errors import PlatformFeeError
+
+    action_descriptor = ActionDescriptor(
+        kind=ActionKind.STATE_MUTATION,
+        module="conformance",
+        action="mutate",
+        payload={"op": "set", "key": "k", "value": "v"},
+    )
+    engine = FeeEngineV0()
+    quote = quote_platform_fee(engine, action_descriptor, payer="payer", platform_fee_amount=1)
+
+    bad_vector = FeeVector.for_action(
+        ActionKind.STATE_MUTATION,
+        (
+            (FeeComponentId.BASE, 1),
+            (FeeComponentId.BYTES, 0),
+            (FeeComponentId.COMPUTE, 0),
+        ),
+    )
+    try:
+        enforce_platform_fee(
+            engine,
+            quote,
+            paid_protocol_vector=bad_vector,
+            paid_platform_amount=1,
+            payer="payer",
+        )
+        return _fail("Q7-FEE-PLAT-01", "accepted mismatched protocol vector")
+    except PlatformFeeError:
+        pass
+
+    try:
+        enforce_platform_fee(
+            engine,
+            quote,
+            paid_protocol_vector=quote.protocol_quote.fee_vector,
+            paid_platform_amount=0,
+            payer="payer",
+        )
+        return _fail("Q7-FEE-PLAT-01", "accepted lower platform amount")
+    except PlatformFeeError:
+        pass
+
+    return _pass("Q7-FEE-PLAT-01")
 
 
 def drill_zk_context() -> tuple[DrillResult, DrillResult]:
@@ -556,6 +609,7 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_id_sender_sep())
     results.append(drill_fee_free_action())
     results.append(drill_fee_sponsor_amount())
+    results.append(drill_platform_fee_additive())
     zk_results = drill_zk_context()
     results.extend(zk_results)
     results.append(drill_root_secret_leak())
