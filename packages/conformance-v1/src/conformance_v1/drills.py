@@ -39,6 +39,7 @@ def _ensure_paths() -> None:
         repo_root / "packages" / "l3-router" / "src",
         repo_root / "packages" / "e2e-demo" / "src",
         repo_root / "apps" / "nyx-reference-client" / "src",
+        repo_root / "apps" / "reference-ui-backend" / "src",
     ]
     for path in paths:
         path_str = str(path)
@@ -243,6 +244,37 @@ def drill_platform_fee_additive() -> DrillResult:
         pass
 
     return _pass("Q7-FEE-PLAT-01")
+
+
+def drill_public_usage_contract() -> DrillResult:
+    _ensure_paths()
+    from nyx_reference_ui_backend.evidence import EvidenceError, load_evidence, run_evidence
+
+    required_fields = (
+        "protocol_anchor",
+        "inputs",
+        "outputs",
+        "receipt_hashes",
+        "state_hash",
+        "replay_ok",
+        "stdout",
+    )
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base_dir = Path(tmpdir)
+            run_evidence(seed=123, run_id="contract-123", base_dir=base_dir)
+            payload = load_evidence("contract-123", base_dir=base_dir)
+    except EvidenceError as exc:
+        return _fail("Q7-OUTPUT-01", f"evidence error: {exc}")
+
+    for field in required_fields:
+        if not hasattr(payload, field):
+            return _fail("Q7-OUTPUT-01", f"missing field: {field}")
+    if not payload.receipt_hashes:
+        return _fail("Q7-OUTPUT-01", "empty receipt_hashes")
+    if not payload.state_hash:
+        return _fail("Q7-OUTPUT-01", "empty state_hash")
+    return _pass("Q7-OUTPUT-01")
 
 
 def drill_zk_context() -> tuple[DrillResult, DrillResult]:
@@ -610,6 +642,7 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_fee_free_action())
     results.append(drill_fee_sponsor_amount())
     results.append(drill_platform_fee_additive())
+    results.append(drill_public_usage_contract())
     zk_results = drill_zk_context()
     results.extend(zk_results)
     results.append(drill_root_secret_leak())
