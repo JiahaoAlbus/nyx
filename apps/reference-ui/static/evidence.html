@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NYX Reference UI — Evidence</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <h1>NYX Reference UI</h1>
+      <nav class="nav-links">
+        <a href="/home">Home</a>
+        <a href="/ecosystem">Ecosystem</a>
+        <a href="/exchange">Exchange</a>
+        <a href="/chat">Chat</a>
+        <a href="/protocol-library">Protocol Library</a>
+        <a href="/trust">Trust</a>
+        <a href="/whitepaper">Whitepaper</a>
+        <a href="/status">Status</a>
+        <a href="/evidence">Evidence</a>
+      </nav>
+    </div>
+    <div class="banner">Week 5 Preview UI — No live data. No accounts. No wallet. No trading. No messaging.</div>
+  </header>
+  <main>
+    <section class="section">
+      <h2>Evidence Run</h2>
+      <p>Deterministic evidence generation. Seed is required.</p>
+      <div class="grid">
+        <div class="card">
+          <label class="label" for="seed-input">Seed</label>
+          <input id="seed-input" type="number" value="123" />
+        </div>
+        <div class="card">
+          <div class="label">Run</div>
+          <button id="run-button">Generate Evidence</button>
+          <div id="run-status" class="value"></div>
+        </div>
+        <div class="card">
+          <div class="label">Export</div>
+          <a id="export-link" class="value" href="#">Download evidence bundle</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Experience Layer (Summary)</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="label">State Hash</div>
+          <div class="value" id="state-hash"></div>
+        </div>
+        <div class="card">
+          <div class="label">Receipt Hashes</div>
+          <div class="value" id="receipt-hashes"></div>
+        </div>
+        <div class="card">
+          <div class="label">Replay OK</div>
+          <div class="value" id="replay-ok"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Evidence Truth Layer (Verbatim)</h2>
+      <p>Evidence below is displayed exactly as returned.</p>
+      <pre id="evidence-raw"></pre>
+    </section>
+  </main>
+  <div class="footer">Preview only. No live systems.</div>
+  <script src="/js/app.js"></script>
+</body>
+</html>
