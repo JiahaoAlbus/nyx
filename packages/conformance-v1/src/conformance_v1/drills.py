@@ -38,6 +38,7 @@ def _ensure_paths() -> None:
         repo_root / "packages" / "l3-dex" / "src",
         repo_root / "packages" / "l3-router" / "src",
         repo_root / "packages" / "e2e-demo" / "src",
+        repo_root / "apps" / "nyx-backend" / "src",
         repo_root / "apps" / "nyx-reference-client" / "src",
         repo_root / "apps" / "reference-ui-backend" / "src",
     ]
@@ -305,6 +306,8 @@ def drill_ui_copy_guard() -> DrillResult:
     ui_dirs = [
         repo_root / "apps" / "reference-ui",
         repo_root / "apps" / "reference-ui-backend",
+        repo_root / "apps" / "nyx-web",
+        repo_root / "apps" / "nyx-ios",
     ]
     tokens = [
         "login",
@@ -340,6 +343,34 @@ def drill_ui_copy_guard() -> DrillResult:
                 if token in lower:
                     return _fail("Q7-UI-01", f"ui copy token found: {token}")
     return _pass("Q7-UI-01")
+
+
+def drill_path_traversal_guard() -> DrillResult:
+    _ensure_paths()
+    from nyx_backend.evidence import EvidenceError, build_export_zip, run_evidence
+
+    bad_ids = ["../", "..\\", "/etc", "a/../../b", "a%2f.."]
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base_dir = Path(tmpdir)
+            run_evidence(
+                seed=123,
+                run_id="safe-123",
+                module="exchange",
+                action="route_swap",
+                payload={"route": "basic"},
+                base_dir=base_dir,
+            )
+            for bad in bad_ids:
+                try:
+                    _ = build_export_zip(bad, base_dir=base_dir)
+                    return _fail("Q8-PATH-01", "path traversal run_id accepted")
+                except EvidenceError:
+                    continue
+    except EvidenceError as exc:
+        return _fail("Q8-PATH-01", f"path traversal guard error: {exc}")
+
+    return _pass("Q8-PATH-01")
 
 
 def drill_zk_context() -> tuple[DrillResult, DrillResult]:
@@ -710,6 +741,7 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_public_usage_contract())
     results.append(drill_evidence_ordering())
     results.append(drill_ui_copy_guard())
+    results.append(drill_path_traversal_guard())
     zk_results = drill_zk_context()
     results.extend(zk_results)
     results.append(drill_root_secret_leak())

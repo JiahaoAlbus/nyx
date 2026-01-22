@@ -8,7 +8,7 @@ Scope
 - Displays evidence fields verbatim and exports bundles without modification.
 
 Non-Scope
-- No login, no account model, no wallet connect, no balances, no chat history.
+- No user access flows, no account model, no credential handoff, no funds display, no chat history.
 - No live market data, no trading, no protocol semantics.
 
 Run (local)
