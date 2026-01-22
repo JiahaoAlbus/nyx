@@ -100,6 +100,16 @@ RULES: tuple[Rule, ...] = (
         repro_command=REPRO_COMMAND,
     ),
     Rule(
+        rule_id="Q8-PATH-01",
+        adversary_class=("External Hackers",),
+        attack_vector="path traversal attempt",
+        surface="Gateway/API",
+        severity="HIGH",
+        rationale="Artifact access must reject traversal and uncontrolled paths.",
+        detection=DETECTION_RUNTIME,
+        repro_command=REPRO_COMMAND,
+    ),
+    Rule(
         rule_id="Q1-ZK-01",
         adversary_class=("Onchain Analytics Firms", "External Hackers"),
         attack_vector="cross-context proof reuse",
