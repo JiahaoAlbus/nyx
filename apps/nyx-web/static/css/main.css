@@ -1,13 +1,16 @@
 :root {
-  --bg: #fff8e1;
-  --bg-2: #fff3b0;
+  --bg: #fffdf5;
+  --bg-2: #fff4c2;
+  --bg-3: #fff9e6;
   --ink: #111111;
   --muted: #5b5b5b;
-  --accent: #f6c000;
-  --accent-2: #ffd54f;
-  --border: #f0d27a;
+  --accent: #ffd200;
+  --accent-2: #ffb300;
+  --accent-3: #ffe082;
+  --border: #f5d889;
   --card: #ffffff;
-  --shadow: rgba(246, 192, 0, 0.35);
+  --shadow: rgba(255, 210, 0, 0.35);
+  --shadow-soft: rgba(255, 210, 0, 0.18);
 }
 
 * {
@@ -18,16 +21,46 @@ body {
   margin: 0;
   font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at top, var(--bg-2), var(--bg));
+  background:
+    radial-gradient(circle at top right, rgba(255, 210, 0, 0.18), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(255, 224, 130, 0.35), transparent 55%),
+    linear-gradient(160deg, var(--bg-2), var(--bg-3) 45%, var(--bg));
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background: radial-gradient(circle at 10% 30%, rgba(255, 210, 0, 0.2), transparent 40%);
+  mix-blend-mode: multiply;
+}
+
+body::after {
+  background: radial-gradient(circle at 85% 10%, rgba(255, 210, 0, 0.22), transparent 35%);
+  mix-blend-mode: screen;
+}
+
+main, header, footer {
+  position: relative;
+  z-index: 1;
 }
 
 header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(6px);
+  box-shadow: 0 8px 20px rgba(255, 210, 0, 0.12);
 }
 
 .navbar {
@@ -46,11 +79,11 @@ header {
 }
 
 .brand .dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 12px var(--shadow);
+  background: radial-gradient(circle at 30% 30%, #fff7cc, var(--accent));
+  box-shadow: 0 0 16px var(--shadow);
 }
 
 .nav-links {
@@ -66,20 +99,23 @@ header {
   font-weight: 600;
   padding: 8px 10px;
   border-radius: 8px;
+  border: 1px solid transparent;
 }
 
 .nav-links a:hover {
-  background: rgba(246, 192, 0, 0.15);
+  background: rgba(255, 210, 0, 0.16);
+  border-color: rgba(255, 210, 0, 0.4);
 }
 
 .banner {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  background: #fff1b8;
+  background: linear-gradient(90deg, #fff7d6, #ffe8a3);
   color: var(--ink);
   font-size: 12px;
   text-align: center;
   padding: 8px 16px;
+  letter-spacing: 0.2px;
 }
 
 .container {
@@ -98,6 +134,9 @@ header {
 .hero h1 {
   font-size: 40px;
   margin-bottom: 12px;
+  background: linear-gradient(90deg, #2b2100, #8a6b00);
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 .hero p {
@@ -117,7 +156,7 @@ header {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 12px 28px rgba(255, 214, 79, 0.15);
+  box-shadow: 0 16px 32px var(--shadow-soft);
 }
 
 .card h3 {
@@ -128,7 +167,7 @@ header {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #fff6d9;
+  background: #fff6da;
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 6px 12px;
@@ -159,6 +198,7 @@ header {
   border: 1px dashed var(--border);
   border-radius: 12px;
   background: rgba(255, 240, 179, 0.4);
+  box-shadow: 0 12px 24px rgba(255, 210, 0, 0.1);
 }
 
 @media (max-width: 720px) {
@@ -187,18 +227,18 @@ input, select {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #fffdf3;
+  background: #fffdf5;
 }
 
 button {
   padding: 10px 14px;
   border-radius: 10px;
   border: none;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #111;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(246, 192, 0, 0.3);
+  box-shadow: 0 10px 20px rgba(255, 210, 0, 0.25);
 }
 
 button:disabled {
