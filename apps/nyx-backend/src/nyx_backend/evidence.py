@@ -15,6 +15,10 @@ class EvidenceError(ValueError):
     pass
 
 
+_MAX_PAYLOAD_DEPTH = 6
+_MAX_PAYLOAD_ITEMS = 64
+_MAX_TEXT_LEN = 256
+
 ALLOWED_ARTIFACT_NAMES = {
     "protocol_anchor.json",
     "inputs.json",
@@ -157,21 +161,31 @@ def _validate_text(value: object, name: str) -> str:
     return value
 
 
-def _validate_payload(payload: object) -> object:
+def _validate_payload(payload: object, depth: int = 0) -> object:
+    if depth > _MAX_PAYLOAD_DEPTH:
+        raise EvidenceError("payload too deep")
     if payload is None:
         return None
     if isinstance(payload, (str, int)) and not isinstance(payload, bool):
+        if isinstance(payload, str) and len(payload) > _MAX_TEXT_LEN:
+            raise EvidenceError("payload text too long")
         return payload
     if isinstance(payload, bool):
         return payload
     if isinstance(payload, list):
-        return [_validate_payload(item) for item in payload]
+        if len(payload) > _MAX_PAYLOAD_ITEMS:
+            raise EvidenceError("payload list too large")
+        return [_validate_payload(item, depth + 1) for item in payload]
     if isinstance(payload, dict):
+        if len(payload) > _MAX_PAYLOAD_ITEMS:
+            raise EvidenceError("payload map too large")
         out = {}
         for key, value in payload.items():
             if not isinstance(key, str):
                 raise EvidenceError("payload keys must be text")
-            out[key] = _validate_payload(value)
+            if len(key) > _MAX_TEXT_LEN:
+                raise EvidenceError("payload key too long")
+            out[key] = _validate_payload(value, depth + 1)
         return out
     raise EvidenceError("payload type not allowed")
 
