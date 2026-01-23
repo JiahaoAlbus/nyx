@@ -138,6 +138,56 @@ final class GatewayClient {
         return payload["messages"] ?? []
     }
 
+    func publishListing(seed: Int, runId: String, payload: [String: Any]) async throws -> RunResponse {
+        let url = baseURL.appendingPathComponent("marketplace/listing")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "seed": seed,
+            "run_id": runId,
+            "payload": payload,
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
+        let data = try await requestData(request)
+        return try JSONDecoder().decode(RunResponse.self, from: data)
+    }
+
+    func purchaseListing(seed: Int, runId: String, listingId: String, qty: Int) async throws -> RunResponse {
+        let url = baseURL.appendingPathComponent("marketplace/purchase")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "seed": seed,
+            "run_id": runId,
+            "payload": ["listing_id": listingId, "qty": qty],
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
+        let data = try await requestData(request)
+        return try JSONDecoder().decode(RunResponse.self, from: data)
+    }
+
+    func fetchListings() async throws -> [ListingRow] {
+        let url = baseURL.appendingPathComponent("marketplace/listings")
+        let request = URLRequest(url: url)
+        let data = try await requestData(request)
+        let payload = try JSONDecoder().decode([String: [ListingRow]].self, from: data)
+        return payload["listings"] ?? []
+    }
+
+    func fetchPurchases(listingId: String) async throws -> [PurchaseRow] {
+        var components = URLComponents(url: baseURL.appendingPathComponent("marketplace/purchases"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "listing_id", value: listingId)]
+        guard let url = components?.url else {
+            throw GatewayError(message: "invalid url")
+        }
+        let request = URLRequest(url: url)
+        let data = try await requestData(request)
+        let payload = try JSONDecoder().decode([String: [PurchaseRow]].self, from: data)
+        return payload["purchases"] ?? []
+    }
+
     func fetchEvidence(runId: String) async throws -> EvidenceBundle {
         if let cached = evidenceCache[runId] {
             return cached

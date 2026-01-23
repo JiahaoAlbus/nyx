@@ -22,6 +22,7 @@ from nyx_backend_gateway.storage import (
     insert_message_event,
     insert_purchase,
     insert_receipt,
+    load_by_id,
 )
 
 
@@ -139,6 +140,19 @@ def _validate_market_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {"sku": sku, "title": title, "price": price, "qty": qty}
 
 
+def _validate_listing_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    sku = _require_text(payload, "sku")
+    title = _require_text(payload, "title", max_len=120)
+    price = _require_int(payload, "price", 1, _MAX_PRICE)
+    return {"sku": sku, "title": title, "price": price}
+
+
+def _validate_purchase_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    listing_id = _require_text(payload, "listing_id")
+    qty = _require_int(payload, "qty", 1, _MAX_AMOUNT)
+    return {"listing_id": listing_id, "qty": qty}
+
+
 def _validate_entertainment_payload(payload: dict[str, Any]) -> dict[str, Any]:
     mode = _require_text(payload, "mode", max_len=32)
     step = _require_int(payload, "step", 0, 20)
@@ -167,6 +181,10 @@ def execute_run(
         payload = _validate_chat_payload(payload)
     if module == "marketplace" and action == "order_intent":
         payload = _validate_market_payload(payload)
+    if module == "marketplace" and action == "listing_publish":
+        payload = _validate_listing_payload(payload)
+    if module == "marketplace" and action == "purchase_listing":
+        payload = _validate_purchase_payload(payload)
     if module == "entertainment" and action == "state_step":
         payload = _validate_entertainment_payload(payload)
 
@@ -219,6 +237,9 @@ def execute_run(
     if module == "exchange" and action in {"route_swap", "place_order", "cancel_order"}:
         fee_record = route_fee(module, action, payload, run_id)
         insert_fee_ledger(conn, fee_record)
+    if module == "marketplace" and action in {"order_intent", "listing_publish", "purchase_listing"}:
+        fee_record = route_fee(module, action, payload, run_id)
+        insert_fee_ledger(conn, fee_record)
 
     if module == "exchange" and action == "place_order":
         order = Order(
@@ -266,6 +287,30 @@ def execute_run(
             Purchase(
                 purchase_id=_deterministic_id("purchase", run_id),
                 listing_id=_deterministic_id("listing", run_id),
+                qty=payload["qty"],
+                run_id=run_id,
+            ),
+        )
+    if module == "marketplace" and action == "listing_publish":
+        insert_listing(
+            conn,
+            Listing(
+                listing_id=_deterministic_id("listing", run_id),
+                sku=payload["sku"],
+                title=payload["title"],
+                price=payload["price"],
+                run_id=run_id,
+            ),
+        )
+    if module == "marketplace" and action == "purchase_listing":
+        listing_record = load_by_id(conn, "listings", "listing_id", payload["listing_id"])
+        if listing_record is None:
+            raise GatewayError("listing_id not found")
+        insert_purchase(
+            conn,
+            Purchase(
+                purchase_id=_deterministic_id("purchase", run_id),
+                listing_id=payload["listing_id"],
                 qty=payload["qty"],
                 run_id=run_id,
             ),

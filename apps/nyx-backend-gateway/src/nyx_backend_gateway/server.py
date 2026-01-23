@@ -10,7 +10,15 @@ from urllib.parse import parse_qs, urlparse
 
 from nyx_backend_gateway.env import load_env_file
 from nyx_backend_gateway.gateway import GatewayError, execute_run, _run_root, _db_path
-from nyx_backend_gateway.storage import create_connection, list_messages, list_orders, list_trades, load_by_id
+from nyx_backend_gateway.storage import (
+    create_connection,
+    list_listings,
+    list_messages,
+    list_orders,
+    list_purchases,
+    list_trades,
+    load_by_id,
+)
 
 
 _MAX_BODY = 4096
@@ -203,6 +211,54 @@ class GatewayHandler(BaseHTTPRequestHandler):
                     }
                 )
                 return
+            if self.path == "/marketplace/listing":
+                payload = self._parse_body()
+                seed = self._require_seed(payload)
+                run_id = self._require_run_id(payload)
+                listing_payload = payload.get("payload")
+                if listing_payload is None:
+                    listing_payload = {k: v for k, v in payload.items() if k not in {"seed", "run_id"}}
+                result = execute_run(
+                    seed=seed,
+                    run_id=run_id,
+                    module="marketplace",
+                    action="listing_publish",
+                    payload=listing_payload,
+                )
+                self._send_json(
+                    {
+                        "run_id": result.run_id,
+                        "status": "complete",
+                        "state_hash": result.state_hash,
+                        "receipt_hashes": result.receipt_hashes,
+                        "replay_ok": result.replay_ok,
+                    }
+                )
+                return
+            if self.path == "/marketplace/purchase":
+                payload = self._parse_body()
+                seed = self._require_seed(payload)
+                run_id = self._require_run_id(payload)
+                purchase_payload = payload.get("payload")
+                if purchase_payload is None:
+                    purchase_payload = {k: v for k, v in payload.items() if k not in {"seed", "run_id"}}
+                result = execute_run(
+                    seed=seed,
+                    run_id=run_id,
+                    module="marketplace",
+                    action="purchase_listing",
+                    payload=purchase_payload,
+                )
+                self._send_json(
+                    {
+                        "run_id": result.run_id,
+                        "status": "complete",
+                        "state_hash": result.state_hash,
+                        "receipt_hashes": result.receipt_hashes,
+                        "replay_ok": result.replay_ok,
+                    }
+                )
+                return
             self._send_text("not found", HTTPStatus.NOT_FOUND)
         except GatewayError as exc:
             self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
@@ -313,6 +369,25 @@ class GatewayHandler(BaseHTTPRequestHandler):
                 messages = list_messages(conn, channel=channel)
                 conn.close()
                 self._send_json({"messages": messages})
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/marketplace/listings":
+            try:
+                conn = create_connection(_db_path())
+                listings = list_listings(conn)
+                conn.close()
+                self._send_json({"listings": listings})
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/marketplace/purchases":
+            try:
+                conn = create_connection(_db_path())
+                listing_id = (query.get("listing_id") or [""])[0] or None
+                purchases = list_purchases(conn, listing_id=listing_id)
+                conn.close()
+                self._send_json({"purchases": purchases})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return

@@ -97,6 +97,39 @@ class GatewayFlowTests(unittest.TestCase):
             {"sku": "sku-1", "title": "Item One", "price": 10, "qty": 2},
         )
 
+    def test_marketplace_listing_flow(self) -> None:
+        self._run_and_check(
+            "marketplace",
+            "listing_publish",
+            {"sku": "sku-2", "title": "Item Two", "price": 12},
+        )
+
+    def test_marketplace_purchase_flow(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "gateway.db"
+            run_root = Path(tmp) / "runs"
+            run_id_listing = "run-listing"
+            execute_run(
+                seed=123,
+                run_id=run_id_listing,
+                module="marketplace",
+                action="listing_publish",
+                payload={"sku": "sku-9", "title": "Item Nine", "price": 9},
+                db_path=db_path,
+                run_root=run_root,
+            )
+            listing_id = f"listing-{hashlib.sha256(f'listing:{run_id_listing}'.encode('utf-8')).hexdigest()[:16]}"
+            result = execute_run(
+                seed=123,
+                run_id="run-purchase",
+                module="marketplace",
+                action="purchase_listing",
+                payload={"listing_id": listing_id, "qty": 1},
+                db_path=db_path,
+                run_root=run_root,
+            )
+            self.assertTrue(result.replay_ok)
+
     def test_entertainment_flow(self) -> None:
         self._run_and_check(
             "entertainment",

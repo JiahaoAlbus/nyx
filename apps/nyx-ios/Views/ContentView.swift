@@ -11,6 +11,8 @@ final class EvidenceViewModel: ObservableObject {
     @Published var sellOrders: [OrderRow] = []
     @Published var trades: [TradeRow] = []
     @Published var messages: [ChatMessage] = []
+    @Published var listings: [ListingRow] = []
+    @Published var purchases: [PurchaseRow] = []
     @Published var evidence: EvidenceBundle?
     @Published var exportURL: URL?
 
@@ -147,6 +149,74 @@ final class EvidenceViewModel: ObservableObject {
     func refreshMessages(channel: String) async {
         do {
             messages = try await client.fetchMessages(channel: channel)
+        } catch {
+            status = "Error: \(error)"
+        }
+    }
+
+    @MainActor
+    func publishListing(sku: String, title: String, price: Int) async {
+        guard let seedInt = Int(seed) else {
+            status = "Seed must be an integer"
+            return
+        }
+        if runId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            status = "Run ID required"
+            return
+        }
+        status = "Publishing listing..."
+        do {
+            _ = try await client.publishListing(seed: seedInt, runId: runId, payload: ["sku": sku, "title": title, "price": price])
+            let bundle = try await client.fetchEvidence(runId: runId)
+            evidence = bundle
+            stateHash = bundle.stateHash
+            receiptHashes = bundle.receiptHashes
+            replayOk = bundle.replayOk
+            await refreshListings()
+            status = "Listing published. Evidence ready."
+        } catch {
+            status = "Error: \(error)"
+        }
+    }
+
+    @MainActor
+    func purchaseListing(listingId: String, qty: Int) async {
+        guard let seedInt = Int(seed) else {
+            status = "Seed must be an integer"
+            return
+        }
+        if runId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            status = "Run ID required"
+            return
+        }
+        status = "Submitting purchase..."
+        do {
+            _ = try await client.purchaseListing(seed: seedInt, runId: runId, listingId: listingId, qty: qty)
+            let bundle = try await client.fetchEvidence(runId: runId)
+            evidence = bundle
+            stateHash = bundle.stateHash
+            receiptHashes = bundle.receiptHashes
+            replayOk = bundle.replayOk
+            await refreshPurchases(listingId: listingId)
+            status = "Purchase recorded. Evidence ready."
+        } catch {
+            status = "Error: \(error)"
+        }
+    }
+
+    @MainActor
+    func refreshListings() async {
+        do {
+            listings = try await client.fetchListings()
+        } catch {
+            status = "Error: \(error)"
+        }
+    }
+
+    @MainActor
+    func refreshPurchases(listingId: String) async {
+        do {
+            purchases = try await client.fetchPurchases(listingId: listingId)
         } catch {
             status = "Error: \(error)"
         }
