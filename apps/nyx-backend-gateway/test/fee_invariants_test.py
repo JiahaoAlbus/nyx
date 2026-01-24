@@ -25,6 +25,19 @@ class FeeInvariantTests(unittest.TestCase):
             ledger.protocol_fee_total + ledger.platform_fee_amount,
         )
 
+    def test_marketplace_fee_additive(self) -> None:
+        payload = {
+            "sku": "sku-1",
+            "title": "Item One",
+            "price": 10,
+        }
+        ledger = route_fee("marketplace", "listing_publish", payload, "run-fee-2")
+        self.assertGreater(ledger.protocol_fee_total, 0)
+        self.assertEqual(
+            ledger.total_paid,
+            ledger.protocol_fee_total + ledger.platform_fee_amount,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

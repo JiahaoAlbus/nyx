@@ -258,6 +258,16 @@ def insert_listing(conn: sqlite3.Connection, listing: Listing) -> None:
     conn.commit()
 
 
+def list_listings(conn: sqlite3.Connection, limit: int = 100) -> list[dict[str, object]]:
+    if limit < 1 or limit > 500:
+        raise StorageError("limit out of bounds")
+    rows = conn.execute(
+        "SELECT * FROM listings ORDER BY listing_id ASC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return [{col: row[col] for col in row.keys()} for row in rows]
+
+
 def insert_purchase(conn: sqlite3.Connection, purchase: Purchase) -> None:
     purchase_id = _validate_text(purchase.purchase_id, "purchase_id")
     listing_id = _validate_text(purchase.listing_id, "listing_id")
@@ -268,6 +278,22 @@ def insert_purchase(conn: sqlite3.Connection, purchase: Purchase) -> None:
         (purchase_id, listing_id, qty, run_id),
     )
     conn.commit()
+
+
+def list_purchases(conn: sqlite3.Connection, listing_id: str | None = None, limit: int = 100) -> list[dict[str, object]]:
+    if limit < 1 or limit > 500:
+        raise StorageError("limit out of bounds")
+    clauses = []
+    params: list[object] = []
+    if listing_id:
+        clauses.append("listing_id = ?")
+        params.append(_validate_text(listing_id, "listing_id"))
+    where = "WHERE " + " AND ".join(clauses) if clauses else ""
+    rows = conn.execute(
+        f"SELECT * FROM purchases {where} ORDER BY purchase_id ASC LIMIT ?",
+        (*params, limit),
+    ).fetchall()
+    return [{col: row[col] for col in row.keys()} for row in rows]
 
 
 def insert_receipt(conn: sqlite3.Connection, receipt: Receipt) -> None:

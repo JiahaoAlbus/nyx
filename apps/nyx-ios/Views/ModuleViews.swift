@@ -206,45 +206,69 @@ struct ChatView: View {
 struct MarketplaceView: View {
     @ObservedObject var model: EvidenceViewModel
     @State private var sku = "sku-1"
+    @State private var title = "Signal Pack"
+    @State private var price = "10"
+    @State private var selectedListingId = ""
     @State private var quantity = "1"
-
-    private let catalog: [String: (String, Int)] = [
-        "sku-1": ("Signal Pack", 10),
-        "sku-2": ("Orbit Node", 12),
-        "sku-3": ("Trace Kit", 8),
-    ]
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                PreviewBanner(text: "Testnet Alpha. Static catalog only.")
+                PreviewBanner(text: "Testnet Alpha. Listings are testnet-only.")
                 RunInputsView(model: model)
-                Picker("Item", selection: $sku) {
-                    Text("Signal Pack").tag("sku-1")
-                    Text("Orbit Node").tag("sku-2")
-                    Text("Trace Kit").tag("sku-3")
-                }
-                .pickerStyle(.menu)
-                TextField("Quantity", text: $quantity)
+                TextField("SKU", text: $sku)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Title", text: $title)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Price", text: $price)
                     .keyboardType(.numberPad)
                     .textFieldStyle(.roundedBorder)
-                Button("Create Order Intent") {
-                    let qty = Int(quantity) ?? 1
-                    let item = catalog[sku] ?? ("Signal Pack", 10)
+                Button("Publish Listing") {
+                    let priceValue = Int(price) ?? 1
                     Task {
-                        await model.run(
-                            module: "marketplace",
-                            action: "order_intent",
-                            payload: [
-                                "sku": sku,
-                                "title": item.0,
-                                "price": item.1,
-                                "qty": qty,
-                            ]
-                        )
+                        await model.publishListing(sku: sku, title: title, price: priceValue)
                     }
                 }
                 .buttonStyle(.borderedProminent)
+
+                Button("Refresh Listings") {
+                    Task {
+                        await model.refreshListings()
+                    }
+                }
+                .buttonStyle(.bordered)
+
+                if !model.listings.isEmpty {
+                    Picker("Listing", selection: $selectedListingId) {
+                        ForEach(model.listings) { listing in
+                            Text("\(listing.title) (\(listing.price))").tag(listing.listingId)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+                TextField("Quantity", text: $quantity)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                Button("Purchase Listing") {
+                    let qty = Int(quantity) ?? 1
+                    if selectedListingId.isEmpty, let first = model.listings.first {
+                        selectedListingId = first.listingId
+                    }
+                    Task {
+                        await model.purchaseListing(listingId: selectedListingId, qty: qty)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                if !model.purchases.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Purchases")
+                            .font(.headline)
+                        ForEach(model.purchases.prefix(6)) { purchase in
+                            Text("\(purchase.qty) from \(purchase.listingId)")
+                                .font(.footnote)
+                        }
+                    }
+                }
                 EvidenceSummary(model: model)
                 Spacer()
             }
