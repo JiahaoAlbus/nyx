@@ -345,6 +345,22 @@ def drill_ui_copy_guard() -> DrillResult:
     return _pass("Q7-UI-01")
 
 
+def drill_q9_copy_guard() -> DrillResult:
+    result = drill_ui_copy_guard()
+    if not result.passed:
+        return DrillResult(rule_id="Q9-COPY-01", passed=False, evidence=result.evidence)
+    return _pass("Q9-COPY-01")
+
+
+def drill_q9_evidence_contract() -> DrillResult:
+    checks = [drill_public_usage_contract(), drill_evidence_ordering()]
+    for result in checks:
+        if not result.passed:
+            evidence = result.evidence or "evidence contract failure"
+            return _fail("Q9-EVIDENCE-01", evidence)
+    return _pass("Q9-EVIDENCE-01")
+
+
 def drill_path_traversal_guard() -> DrillResult:
     _ensure_paths()
     from nyx_backend.evidence import EvidenceError, build_export_zip, run_evidence
@@ -741,6 +757,8 @@ def run_drills() -> tuple[DrillResult, ...]:
     results.append(drill_public_usage_contract())
     results.append(drill_evidence_ordering())
     results.append(drill_ui_copy_guard())
+    results.append(drill_q9_copy_guard())
+    results.append(drill_q9_evidence_contract())
     results.append(drill_path_traversal_guard())
     zk_results = drill_zk_context()
     results.extend(zk_results)
