@@ -8,3 +8,6 @@ Thumbs.db
 /week2_files.txt
 /Microsoft
 /git
+cswdz.env
+.env
+*.env
