@@ -12,9 +12,9 @@ Non-Scope
 - No live market data, no trading claims, no protocol semantics.
 
 Run (local)
-- Open the folder in Xcode.
-- Ensure the backend gateway is running on localhost:8091.
-- Build and run on a simulator.
+- Start the backend gateway on localhost:8091.
+- Open NYXPortal.xcodeproj in Xcode.
+- Select an iPhone Simulator and Run.
 
 Rules
 - Seed and run_id are required inputs.
