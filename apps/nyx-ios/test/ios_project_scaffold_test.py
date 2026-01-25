@@ -5,7 +5,7 @@ from pathlib import Path
 
 class IOSProjectScaffoldTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.root = Path(__file__).resolve().parents[2]
+        self.root = Path(__file__).resolve().parents[1]
         self.project = self.root / "NYXPortal.xcodeproj" / "project.pbxproj"
 
     def test_project_exists(self) -> None:
