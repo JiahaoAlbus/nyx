@@ -10,6 +10,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+import http.client
 from urllib.error import URLError, HTTPError
 from urllib.request import Request, urlopen
 
@@ -32,8 +33,17 @@ def _request_json(method: str, url: str, payload: dict | None = None) -> bytes:
     req = Request(url, data=data, method=method)
     if payload is not None:
         req.add_header("Content-Type", "application/json")
-    with urlopen(req, timeout=5) as resp:
-        return resp.read()
+    try:
+        with urlopen(req, timeout=5) as resp:
+            return resp.read()
+    except (HTTPError, URLError, http.client.RemoteDisconnected) as exc:
+        detail = {
+            "method": method,
+            "url": url,
+            "payload": payload or {},
+            "error": str(exc),
+        }
+        raise RuntimeError(json.dumps(detail, separators=(",", ":"))) from exc
 
 
 def _get_json(url: str) -> tuple[bytes, dict]:
@@ -236,6 +246,11 @@ def main() -> int:
             "runs": sorted([p.name for p in out_dir.iterdir() if p.is_dir()]),
         }
         _write_bytes(out_dir / "manifest.json", json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+    except Exception as exc:
+        _write_failure(out_dir, str(exc))
+        print("Smoke failed; check backend logs.", file=sys.stderr)
+        print(str(exc), file=sys.stderr)
+        return 1
     finally:
         if proc:
             proc.terminate()
@@ -247,3 +262,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+def _write_failure(out_dir: Path, error: str) -> None:
+    payload = {"error": error}
+    _write_bytes(out_dir / "failure.json", json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"))
