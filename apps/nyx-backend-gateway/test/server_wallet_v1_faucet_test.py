@@ -15,7 +15,8 @@ import nyx_backend_gateway.server as server
 
 class ServerWalletV1FaucetTests(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ.setdefault("NYX_TESTNET_FEE_ADDRESS", "testnet-fee-address")
+        os.environ["NYX_TESTNET_FEE_ADDRESS"] = "testnet-fee-address"
+        os.environ.pop("NYX_TESTNET_TREASURY_ADDRESS", None)
         self.tmp = tempfile.TemporaryDirectory()
         self.db_path = Path(self.tmp.name) / "gateway.db"
         self.run_root = Path(self.tmp.name) / "runs"

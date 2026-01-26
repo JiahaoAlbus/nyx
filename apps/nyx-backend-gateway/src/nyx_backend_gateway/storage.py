@@ -338,7 +338,7 @@ def insert_chat_message(conn: sqlite3.Connection, message: ChatMessage) -> None:
     message_id = _validate_text(message.message_id, "message_id", r"[A-Za-z0-9_-]{1,64}")
     room_id = _validate_text(message.room_id, "room_id", r"[A-Za-z0-9_-]{1,64}")
     sender = _validate_text(message.sender_account_id, "sender_account_id", r"[A-Za-z0-9_-]{1,64}")
-    body = _validate_text(message.body, "body", r"[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]{1,512}")
+    body = _validate_text(message.body, "body", r"[^\x00-\x08\x0b\x0c\x0e-\x1f]{1,512}")
     seq = _validate_int(message.seq, "seq", 1)
     prev_digest = _validate_text(message.prev_digest, "prev_digest", r"[A-Fa-f0-9]{16,128}")
     msg_digest = _validate_text(message.msg_digest, "msg_digest", r"[A-Fa-f0-9]{16,128}")

@@ -31,6 +31,7 @@ from nyx_backend_gateway.storage import (
     list_purchases,
     list_trades,
     load_by_id,
+    StorageError,
 )
 
 
@@ -638,7 +639,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
                 )
                 return
             self._send_text("not found", HTTPStatus.NOT_FOUND)
-        except GatewayError as exc:
+        except (GatewayError, portal.PortalError, StorageError) as exc:
             self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
 
     def do_GET(self) -> None:  # noqa: N802
@@ -805,16 +806,16 @@ class GatewayHandler(BaseHTTPRequestHandler):
             room_id = parts[4]
             try:
                 _ = self._require_auth()
-                after_raw = (query.get("after") or [\"\"])[0] or None
-                limit_raw = (query.get("limit") or [\"\"])[0] or None
+                after_raw = (query.get("after") or [""])[0] or None
+                limit_raw = (query.get("limit") or [""])[0] or None
                 after = int(after_raw) if after_raw else None
                 limit = int(limit_raw) if limit_raw else 50
                 conn = create_connection(_db_path())
                 messages = portal.list_messages(conn, room_id=room_id, after=after, limit=limit)
                 conn.close()
-                self._send_json({\"messages\": messages})
+                self._send_json({"messages": messages})
             except Exception as exc:
-                self._send_json({\"error\": str(exc)}, HTTPStatus.BAD_REQUEST)
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         if path == "/marketplace/listings":
             try:
