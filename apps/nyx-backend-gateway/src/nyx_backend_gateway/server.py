@@ -806,7 +806,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
             room_id = parts[4]
             try:
                 _ = self._require_auth()
-                after_raw = (query.get("after") or [""])[0] or None
+                after_raw = (query.get("after") or [''])[0] or None
                 limit_raw = (query.get("limit") or [""])[0] or None
                 after = int(after_raw) if after_raw else None
                 limit = int(limit_raw) if limit_raw else 50
