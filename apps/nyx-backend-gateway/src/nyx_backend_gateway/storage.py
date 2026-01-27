@@ -30,10 +30,17 @@ def _validate_text(value: object, name: str, pattern: str = r"[A-Za-z0-9_./-]{1,
     return value
 
 
-def _validate_int(value: object, name: str, min_value: int = 0) -> int:
+def _validate_int(
+    value: object,
+    name: str,
+    min_value: int = 0,
+    max_value: int | None = None,
+) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise StorageError(f"{name} must be int")
     if value < min_value:
+        raise StorageError(f"{name} out of bounds")
+    if max_value is not None and value > max_value:
         raise StorageError(f"{name} out of bounds")
     return value
 
@@ -211,7 +218,7 @@ def insert_evidence_run(conn: sqlite3.Connection, record: EvidenceRun) -> None:
     receipt_hashes = json.dumps(record.receipt_hashes, sort_keys=True, separators=(",", ":"))
     replay_ok = 1 if record.replay_ok else 0
     conn.execute(
-        "INSERT INTO evidence_runs (run_id, module, action, seed, state_hash, receipt_hashes, replay_ok) "
+        "INSERT OR REPLACE INTO evidence_runs (run_id, module, action, seed, state_hash, receipt_hashes, replay_ok) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
         (run_id, module, action, seed, state_hash, receipt_hashes, replay_ok),
     )
@@ -321,7 +328,7 @@ def insert_chat_room(conn: sqlite3.Connection, room: ChatRoom) -> None:
     created_at = _validate_int(room.created_at, "created_at", 1)
     is_public = _validate_int(room.is_public, "is_public", 0)
     conn.execute(
-        "INSERT INTO chat_rooms (room_id, name, created_at, is_public) VALUES (?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO chat_rooms (room_id, name, created_at, is_public) VALUES (?, ?, ?, ?)",
         (room_id, name, created_at, is_public),
     )
     conn.commit()
@@ -345,7 +352,7 @@ def insert_chat_message(conn: sqlite3.Connection, message: ChatMessage) -> None:
     chain_head = _validate_text(message.chain_head, "chain_head", r"[A-Fa-f0-9]{16,128}")
     created_at = _validate_int(message.created_at, "created_at", 1)
     conn.execute(
-        "INSERT INTO chat_messages (message_id, room_id, sender_account_id, body, seq, prev_digest, msg_digest, "
+        "INSERT OR REPLACE INTO chat_messages (message_id, room_id, sender_account_id, body, seq, prev_digest, msg_digest, "
         "chain_head, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (message_id, room_id, sender, body, seq, prev_digest, msg_digest, chain_head, created_at),
     )
@@ -370,6 +377,26 @@ def list_chat_messages(conn: sqlite3.Connection, room_id: str, after: int | None
     return [{col: row[col] for col in row.keys()} for row in rows]
 
 
+def list_receipts(conn: sqlite3.Connection, limit: int = 50) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 500)
+    rows = conn.execute(
+        "SELECT receipt_id, module, action, state_hash, receipt_hashes, replay_ok, run_id "
+        "FROM receipts ORDER BY receipt_id ASC LIMIT ?",
+        (lim,),
+    ).fetchall()
+    results = []
+    for row in rows:
+        record = {col: row[col] for col in row.keys()}
+        raw_hashes = record.get("receipt_hashes", "[]")
+        try:
+            record["receipt_hashes"] = json.loads(raw_hashes)
+        except json.JSONDecodeError:
+            record["receipt_hashes"] = []
+        record["replay_ok"] = bool(record.get("replay_ok"))
+        results.append(record)
+    return results
+
+
 def insert_order(conn: sqlite3.Connection, order: Order) -> None:
     order_id = _validate_text(order.order_id, "order_id")
     side = _validate_text(order.side, "side", r"(BUY|SELL)")
@@ -379,7 +406,7 @@ def insert_order(conn: sqlite3.Connection, order: Order) -> None:
     asset_out = _validate_text(order.asset_out, "asset_out")
     run_id = _validate_text(order.run_id, "run_id")
     conn.execute(
-        "INSERT INTO orders (order_id, side, amount, price, asset_in, asset_out, run_id) "
+        "INSERT OR REPLACE INTO orders (order_id, side, amount, price, asset_in, asset_out, run_id) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
         (order_id, side, amount, price, asset_in, asset_out, run_id),
     )
@@ -434,7 +461,7 @@ def insert_trade(conn: sqlite3.Connection, trade: Trade) -> None:
     price = _validate_int(trade.price, "price", 1)
     run_id = _validate_text(trade.run_id, "run_id")
     conn.execute(
-        "INSERT INTO trades (trade_id, order_id, amount, price, run_id) "
+        "INSERT OR REPLACE INTO trades (trade_id, order_id, amount, price, run_id) "
         "VALUES (?, ?, ?, ?, ?)",
         (trade_id, order_id, amount, price, run_id),
     )
@@ -455,7 +482,7 @@ def insert_message_event(conn: sqlite3.Connection, message: MessageEvent) -> Non
         raise StorageError("body too long")
     run_id = _validate_text(message.run_id, "run_id")
     conn.execute(
-        "INSERT INTO messages (message_id, channel, body, run_id) VALUES (?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO messages (message_id, channel, body, run_id) VALUES (?, ?, ?, ?)",
         (message_id, channel, message.body, run_id),
     )
     conn.commit()
@@ -487,7 +514,7 @@ def insert_listing(conn: sqlite3.Connection, listing: Listing) -> None:
     price = _validate_int(listing.price, "price", 1)
     run_id = _validate_text(listing.run_id, "run_id")
     conn.execute(
-        "INSERT INTO listings (listing_id, sku, title, price, run_id) VALUES (?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO listings (listing_id, sku, title, price, run_id) VALUES (?, ?, ?, ?, ?)",
         (listing_id, sku, listing.title, price, run_id),
     )
     conn.commit()
@@ -509,7 +536,7 @@ def insert_purchase(conn: sqlite3.Connection, purchase: Purchase) -> None:
     qty = _validate_int(purchase.qty, "qty", 1)
     run_id = _validate_text(purchase.run_id, "run_id")
     conn.execute(
-        "INSERT INTO purchases (purchase_id, listing_id, qty, run_id) VALUES (?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO purchases (purchase_id, listing_id, qty, run_id) VALUES (?, ?, ?, ?)",
         (purchase_id, listing_id, qty, run_id),
     )
     conn.commit()
@@ -566,7 +593,7 @@ def insert_entertainment_event(conn: sqlite3.Connection, event: EntertainmentEve
     step = _validate_int(event.step, "step", 0)
     run_id = _validate_text(event.run_id, "run_id")
     conn.execute(
-        "INSERT INTO entertainment_events (event_id, item_id, mode, step, run_id) VALUES (?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO entertainment_events (event_id, item_id, mode, step, run_id) VALUES (?, ?, ?, ?, ?)",
         (event_id, item_id, mode, step, run_id),
     )
     conn.commit()
@@ -603,7 +630,7 @@ def insert_receipt(conn: sqlite3.Connection, receipt: Receipt) -> None:
     replay_ok = 1 if receipt.replay_ok else 0
     run_id = _validate_text(receipt.run_id, "run_id")
     conn.execute(
-        "INSERT INTO receipts (receipt_id, module, action, state_hash, receipt_hashes, replay_ok, run_id) "
+        "INSERT OR REPLACE INTO receipts (receipt_id, module, action, state_hash, receipt_hashes, replay_ok, run_id) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
         (receipt_id, module, action, state_hash, receipt_hashes, replay_ok, run_id),
     )
@@ -620,7 +647,7 @@ def insert_fee_ledger(conn: sqlite3.Connection, record: FeeLedger) -> None:
     fee_address = _validate_text(record.fee_address, "fee_address", r"[A-Za-z0-9_:-]{8,128}")
     run_id = _validate_text(record.run_id, "run_id")
     conn.execute(
-        "INSERT INTO fee_ledger (fee_id, module, action, protocol_fee_total, platform_fee_amount, total_paid, fee_address, run_id) "
+        "INSERT OR REPLACE INTO fee_ledger (fee_id, module, action, protocol_fee_total, platform_fee_amount, total_paid, fee_address, run_id) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (fee_id, module, action, protocol_fee_total, platform_fee_amount, total_paid, fee_address, run_id),
     )
@@ -666,7 +693,7 @@ def insert_wallet_transfer(conn: sqlite3.Connection, transfer: WalletTransfer) -
     treasury_address = _validate_wallet_address(transfer.treasury_address, "treasury_address")
     run_id = _validate_text(transfer.run_id, "run_id")
     conn.execute(
-        "INSERT INTO wallet_transfers (transfer_id, from_address, to_address, amount, fee_total, treasury_address, run_id) "
+        "INSERT OR REPLACE INTO wallet_transfers (transfer_id, from_address, to_address, amount, fee_total, treasury_address, run_id) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
         (transfer_id, from_address, to_address, amount, fee_total, treasury_address, run_id),
     )

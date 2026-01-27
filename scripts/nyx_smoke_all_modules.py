@@ -134,6 +134,14 @@ def _resolve_out_dir(repo_root: Path, out_dir_arg: str) -> Path:
     return out_dir
 
 
+def _write_failure(out_dir: Path, error: str) -> None:
+    payload = {"error": error}
+    _write_bytes(
+        out_dir / "failure.json",
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=123)
@@ -262,6 +270,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-def _write_failure(out_dir: Path, error: str) -> None:
-    payload = {"error": error}
-    _write_bytes(out_dir / "failure.json", json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"))
