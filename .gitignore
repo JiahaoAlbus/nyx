@@ -12,6 +12,12 @@ cswdz.env
 .env
 *.env
 docs/evidence/fundraising/latest/
+docs/evidence/smoke/
+docs/evidence/20260126_192407/
+apps/nyx-backend-gateway/data/
+apps/nyx-backend-gateway/runs/
+apps/nyx-ios/NYXPortal.xcodeproj/project.xcworkspace/
+apps/nyx-ios/NYXPortal.xcodeproj/xcuserdata/
 __pycache__/
 *.pyc
 .venv/
