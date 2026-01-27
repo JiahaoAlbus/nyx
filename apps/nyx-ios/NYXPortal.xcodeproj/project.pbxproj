@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,6 +18,8 @@
 		A1B2C3D4E5F6000000000009 /* WalletModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000109 /* WalletModels.swift */; };
 		A1B2C3D4E5F6000000000010 /* GatewayClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000110 /* GatewayClient.swift */; };
 		A1B2C3D4E5F6000000000011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000111 /* Assets.xcassets */; };
+		A1B2C3D4E5F6000000000012 /* PortalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000113 /* PortalModels.swift */; };
+		A1B2C3D4E5F6000000000013 /* PortalKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000114 /* PortalKeyStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,27 +35,20 @@
 		A1B2C3D4E5F6000000000110 /* GatewayClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GatewayClient.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000111 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000112 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000113 /* PortalModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PortalModels.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000114 /* PortalKeyStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PortalKeyStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000801 /* NYXPortal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = NYXPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		A1B2C3D4E5F6000000000201 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			runOnlyForDeploymentPostprocessing = 0;
-			files = (
-			);
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		A1B2C3D4E5F6000000000300 = {
 			isa = PBXGroup;
 			children = (
-				A1B2C3D4E5F6000000000301 /* NYXPortal */,
+				A1B2C3D4E5F6000000000301,
 			);
 			sourceTree = "<group>";
 		};
-		A1B2C3D4E5F6000000000301 /* NYXPortal */ = {
+		A1B2C3D4E5F6000000000301 = {
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6000000000401 /* Views */,
@@ -71,7 +66,7 @@
 				A1B2C3D4E5F6000000000102 /* ContentView.swift */,
 				A1B2C3D4E5F6000000000103 /* ModuleViews.swift */,
 			);
-			path = "Views";
+			path = Views;
 			sourceTree = "<group>";
 		};
 		A1B2C3D4E5F6000000000402 /* Models */ = {
@@ -83,8 +78,10 @@
 				A1B2C3D4E5F6000000000107 /* ChatModels.swift */,
 				A1B2C3D4E5F6000000000108 /* EntertainmentModels.swift */,
 				A1B2C3D4E5F6000000000109 /* WalletModels.swift */,
+				A1B2C3D4E5F6000000000113 /* PortalModels.swift */,
+				A1B2C3D4E5F6000000000114 /* PortalKeyStore.swift */,
 			);
-			path = "Models";
+			path = Models;
 			sourceTree = "<group>";
 		};
 		A1B2C3D4E5F6000000000403 /* Network */ = {
@@ -92,7 +89,15 @@
 			children = (
 				A1B2C3D4E5F6000000000110 /* GatewayClient.swift */,
 			);
-			path = "Network";
+			path = Network;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6000000000B01 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6000000000801 /* NYXPortal.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -103,7 +108,6 @@
 			buildConfigurationList = A1B2C3D4E5F6000000000601 /* Build configuration list for PBXNativeTarget "NYXPortal" */;
 			buildPhases = (
 				A1B2C3D4E5F6000000000701 /* Sources */,
-				A1B2C3D4E5F6000000000702 /* Frameworks */,
 				A1B2C3D4E5F6000000000703 /* Resources */,
 			);
 			buildRules = (
@@ -134,6 +138,10 @@
 			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = A1B2C3D4E5F6000000000300;
 			productRefGroup = A1B2C3D4E5F6000000000B01 /* Products */;
 			projectDirPath = "";
@@ -148,10 +156,10 @@
 		A1B2C3D4E5F6000000000703 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				A1B2C3D4E5F6000000000011 /* Assets.xcassets in Resources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
@@ -159,7 +167,6 @@
 		A1B2C3D4E5F6000000000701 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				A1B2C3D4E5F6000000000001 /* NYXPortalApp.swift in Sources */,
 				A1B2C3D4E5F6000000000002 /* ContentView.swift in Sources */,
@@ -170,25 +177,13 @@
 				A1B2C3D4E5F6000000000007 /* ChatModels.swift in Sources */,
 				A1B2C3D4E5F6000000000008 /* EntertainmentModels.swift in Sources */,
 				A1B2C3D4E5F6000000000009 /* WalletModels.swift in Sources */,
+				A1B2C3D4E5F6000000000012 /* PortalModels.swift in Sources */,
+				A1B2C3D4E5F6000000000013 /* PortalKeyStore.swift in Sources */,
 				A1B2C3D4E5F6000000000010 /* GatewayClient.swift in Sources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXFileReference section */
-		A1B2C3D4E5F6000000000801 /* NYXPortal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = NYXPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
-/* Begin PBXGroup section */
-		A1B2C3D4E5F6000000000B01 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A1B2C3D4E5F6000000000801 /* NYXPortal.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-/* End PBXGroup section */
 
 /* Begin XCBuildConfiguration section */
 		A1B2C3D4E5F6000000000C01 /* Debug */ = {
@@ -232,7 +227,10 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nyx.NYXPortal;
 				PRODUCT_NAME = NYXPortal;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -247,27 +245,30 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nyx.NYXPortal;
 				PRODUCT_NAME = NYXPortal;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1B2C3D4E5F6000000000A01 /* Build configuration list for PBXProject "NYXPortal" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A1B2C3D4E5F6000000000C01 /* Debug */,
-				A1B2C3D4E5F6000000000C02 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		A1B2C3D4E5F6000000000601 /* Build configuration list for PBXNativeTarget "NYXPortal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1B2C3D4E5F6000000000C03 /* Debug */,
 				A1B2C3D4E5F6000000000C04 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3D4E5F6000000000A01 /* Build configuration list for PBXProject "NYXPortal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F6000000000C01 /* Debug */,
+				A1B2C3D4E5F6000000000C02 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
