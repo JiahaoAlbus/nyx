@@ -619,7 +619,7 @@ struct TrustView: View {
     }
 }
 
-struct SettingsView: View {
+struct SettingsViewLegacy: View {
     @ObservedObject var model: EvidenceViewModel
 
     var body: some View {

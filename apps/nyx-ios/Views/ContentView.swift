@@ -625,7 +625,7 @@ struct AppShell: View {
                     .tabItem { Label("Trust", systemImage: "shield") }
                 EvidenceInspectorView(model: model)
                     .tabItem { Label("Evidence", systemImage: "doc.plaintext") }
-                SettingsView(model: model)
+                SettingsViewLegacy(model: model)
                     .tabItem { Label("Settings", systemImage: "gearshape") }
             }
             .accentColor(SolsticePalette.accent)
