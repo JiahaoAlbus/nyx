@@ -45,12 +45,8 @@ python3 scripts/nyx_smoke_all_modules.py --seed "$SEED" --run-id "$RUN_ID"
 echo "PASS: Smoke tests completed."
 
 echo "[5/6] Building Web Bundle (nyx-world)..."
-if [ -d "apps/nyx-world" ]; then
-    bash scripts/build_nyx_world.sh
-    echo "PASS: Web bundle built."
-else
-    echo "WARN: apps/nyx-world not found, skipping."
-fi
+bash scripts/build_nyx_world.sh
+echo "PASS: Web bundle built (or skipped)."
 
 echo "[6/6] Building iOS App (NYXPortal)..."
 if command -v xcodebuild >/dev/null 2>&1; then
