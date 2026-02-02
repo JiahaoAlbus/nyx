@@ -2,10 +2,13 @@ export enum Screen {
   ONBOARDING = 'ONBOARDING',
   HOME = 'HOME',
   WALLET = 'WALLET',
-  SWAP = 'SWAP',
+  EXCHANGE = 'EXCHANGE',
   CHAT = 'CHAT',
-  MARKET = 'MARKET',
-  ACTIVITY = 'ACTIVITY'
+  STORE = 'STORE',
+  ACTIVITY = 'ACTIVITY',
+  EVIDENCE = 'EVIDENCE',
+  SETTINGS = 'SETTINGS',
+  DAPP_BROWSER = 'DAPP_BROWSER'
 }
 
 export interface EvidenceRun {

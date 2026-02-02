@@ -74,35 +74,35 @@ def _capabilities() -> dict[str, object]:
             "GET /evidence",
             "GET /artifact",
             "GET /export.zip",
-            "GET /list",
+            "GET /list?limit=100&offset=0",
             "POST /portal/v1/accounts",
             "POST /portal/v1/auth/challenge",
             "POST /portal/v1/auth/verify",
             "POST /portal/v1/auth/logout",
             "GET /portal/v1/me",
-            "GET /portal/v1/activity",
+            "GET /portal/v1/activity?limit=50&offset=0",
             "POST /chat/v1/rooms",
-            "GET /chat/v1/rooms",
+            "GET /chat/v1/rooms?limit=50&offset=0",
             "POST /chat/v1/rooms/{room_id}/messages",
-            "GET /chat/v1/rooms/{room_id}/messages",
+            "GET /chat/v1/rooms/{room_id}/messages?limit=50&after=seq",
             "POST /wallet/v1/faucet",
             "POST /wallet/v1/transfer",
             "GET /wallet/balance",
             "POST /wallet/faucet",
             "POST /wallet/transfer",
             "GET /exchange/orderbook",
-            "GET /exchange/orders",
-            "GET /exchange/trades",
+            "GET /exchange/orders?limit=100&offset=0",
+            "GET /exchange/trades?limit=100&offset=0",
             "POST /exchange/place_order",
             "POST /exchange/cancel_order",
-            "GET /chat/messages",
+            "GET /chat/messages?limit=50&offset=0",
             "POST /chat/send",
-            "GET /marketplace/listings",
-            "GET /marketplace/purchases",
+            "GET /marketplace/listings?limit=100&offset=0",
+            "GET /marketplace/purchases?limit=100&offset=0",
             "POST /marketplace/listing",
             "POST /marketplace/purchase",
-            "GET /entertainment/items",
-            "GET /entertainment/events",
+            "GET /entertainment/items?limit=100&offset=0",
+            "GET /entertainment/events?limit=100&offset=0",
             "POST /entertainment/step",
         ],
         "notes": "Testnet Beta. No live mainnet data.",
@@ -146,12 +146,31 @@ class GatewayHandler(BaseHTTPRequestHandler):
     server_version = "NYXGateway/2.0"
 
     def _send_json(self, payload: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
-        data = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
+        try:
+            data = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            self.end_headers()
+            self.wfile.write(data)
+        except Exception as exc:
+            # Fallback for serialization errors
+            error_data = json.dumps({"error": "internal serialization error"}).encode("utf-8")
+            self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(error_data)))
+            self.end_headers()
+            self.wfile.write(error_data)
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
-        self.wfile.write(data)
 
     def _send_text(self, payload: str, status: HTTPStatus) -> None:
         data = payload.encode("utf-8")
@@ -684,14 +703,16 @@ class GatewayHandler(BaseHTTPRequestHandler):
             try:
                 session = self._require_auth()
                 limit_raw = (query.get("limit") or ["50"])[0]
+                offset_raw = (query.get("offset") or ["0"])[0]
                 try:
                     limit = int(limit_raw)
+                    offset = int(offset_raw)
                 except ValueError:
-                    raise GatewayError("limit invalid")
+                    raise GatewayError("limit or offset invalid")
                 conn = create_connection(_db_path())
-                receipts = list_receipts(conn, limit=limit)
+                receipts = list_receipts(conn, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"account_id": session.account_id, "receipts": receipts})
+                self._send_json({"account_id": session.account_id, "receipts": receipts, "limit": limit, "offset": offset})
             except (GatewayError, portal.PortalError, StorageError) as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
@@ -770,18 +791,22 @@ class GatewayHandler(BaseHTTPRequestHandler):
                 side = (query.get("side") or [""])[0] or None
                 asset_in = (query.get("asset_in") or [""])[0] or None
                 asset_out = (query.get("asset_out") or [""])[0] or None
-                orders = list_orders(conn, side=side, asset_in=asset_in, asset_out=asset_out)
+                limit = int((query.get("limit") or ["100"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                orders = list_orders(conn, side=side, asset_in=asset_in, asset_out=asset_out, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"orders": orders})
+                self._send_json({"orders": orders, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         if path == "/exchange/trades":
             try:
                 conn = create_connection(_db_path())
-                trades = list_trades(conn)
+                limit = int((query.get("limit") or ["100"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                trades = list_trades(conn, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"trades": trades})
+                self._send_json({"trades": trades, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
@@ -799,19 +824,23 @@ class GatewayHandler(BaseHTTPRequestHandler):
             try:
                 conn = create_connection(_db_path())
                 channel = (query.get("channel") or [""])[0] or None
-                messages = list_messages(conn, channel=channel)
+                limit = int((query.get("limit") or ["50"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                messages = list_messages(conn, channel=channel, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"messages": messages})
+                self._send_json({"messages": messages, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         if path == "/chat/v1/rooms":
             try:
                 _ = self._require_auth()
+                limit = int((query.get("limit") or ["50"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
                 conn = create_connection(_db_path())
-                rooms = portal.list_rooms(conn)
+                rooms = portal.list_rooms(conn, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"rooms": rooms})
+                self._send_json({"rooms": rooms, "limit": limit, "offset": offset})
             except GatewayError as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
@@ -837,9 +866,11 @@ class GatewayHandler(BaseHTTPRequestHandler):
         if path == "/marketplace/listings":
             try:
                 conn = create_connection(_db_path())
-                listings = list_listings(conn)
+                limit = int((query.get("limit") or ["100"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                listings = list_listings(conn, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"listings": listings})
+                self._send_json({"listings": listings, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
@@ -847,9 +878,11 @@ class GatewayHandler(BaseHTTPRequestHandler):
             try:
                 conn = create_connection(_db_path())
                 listing_id = (query.get("listing_id") or [""])[0] or None
-                purchases = list_purchases(conn, listing_id=listing_id)
+                limit = int((query.get("limit") or ["100"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                purchases = list_purchases(conn, listing_id=listing_id, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"purchases": purchases})
+                self._send_json({"purchases": purchases, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
@@ -857,9 +890,11 @@ class GatewayHandler(BaseHTTPRequestHandler):
             try:
                 conn = create_connection(_db_path())
                 gateway._ensure_entertainment_items(conn)
-                items = list_entertainment_items(conn)
+                limit = int((query.get("limit") or ["100"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                items = list_entertainment_items(conn, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"items": items})
+                self._send_json({"items": items, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
@@ -867,9 +902,11 @@ class GatewayHandler(BaseHTTPRequestHandler):
             try:
                 conn = create_connection(_db_path())
                 item_id = (query.get("item_id") or [""])[0] or None
-                events = list_entertainment_events(conn, item_id=item_id)
+                limit = int((query.get("limit") or ["100"])[0])
+                offset = int((query.get("offset") or ["0"])[0])
+                events = list_entertainment_events(conn, item_id=item_id, limit=limit, offset=offset)
                 conn.close()
-                self._send_json({"events": events})
+                self._send_json({"events": events, "limit": limit, "offset": offset})
             except Exception as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return

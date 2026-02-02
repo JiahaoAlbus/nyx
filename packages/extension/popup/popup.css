@@ -1,0 +1,103 @@
+body {
+  width: 320px;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+header {
+  padding: 16px;
+  background: #0f172a;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+}
+
+.network {
+  font-size: 0.75rem;
+  background: #334155;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.address-box, .balance-box {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.value {
+  font-family: monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+#create-account {
+  width: 100%;
+}
+
+footer {
+  padding: 10px;
+  background: #f1f5f9;
+  font-size: 0.7rem;
+  text-align: center;
+  color: #64748b;
+}

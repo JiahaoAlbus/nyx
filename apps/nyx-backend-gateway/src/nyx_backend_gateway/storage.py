@@ -377,12 +377,13 @@ def list_chat_messages(conn: sqlite3.Connection, room_id: str, after: int | None
     return [{col: row[col] for col in row.keys()} for row in rows]
 
 
-def list_receipts(conn: sqlite3.Connection, limit: int = 50) -> list[dict[str, object]]:
+def list_receipts(conn: sqlite3.Connection, limit: int = 50, offset: int = 0) -> list[dict[str, object]]:
     lim = _validate_int(limit, "limit", 1, 500)
+    off = _validate_int(offset, "offset", 0)
     rows = conn.execute(
         "SELECT receipt_id, module, action, state_hash, receipt_hashes, replay_ok, run_id "
-        "FROM receipts ORDER BY receipt_id ASC LIMIT ?",
-        (lim,),
+        "FROM receipts ORDER BY receipt_id ASC LIMIT ? OFFSET ?",
+        (lim, off),
     ).fetchall()
     results = []
     for row in rows:
@@ -432,7 +433,11 @@ def list_orders(
     asset_in: str | None = None,
     asset_out: str | None = None,
     order_by: str = "price ASC, order_id ASC",
+    limit: int = 100,
+    offset: int = 0,
 ) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 1000)
+    off = _validate_int(offset, "offset", 0)
     clauses = []
     params: list[object] = []
     if side:
@@ -448,8 +453,8 @@ def list_orders(
     if order_by not in {"price ASC, order_id ASC", "price DESC, order_id ASC"}:
         raise StorageError("order_by not allowed")
     rows = conn.execute(
-        f"SELECT * FROM orders {where} ORDER BY {order_by}",
-        params,
+        f"SELECT * FROM orders {where} ORDER BY {order_by} LIMIT ? OFFSET ?",
+        (*params, lim, off),
     ).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 
@@ -468,8 +473,10 @@ def insert_trade(conn: sqlite3.Connection, trade: Trade) -> None:
     conn.commit()
 
 
-def list_trades(conn: sqlite3.Connection) -> list[dict[str, object]]:
-    rows = conn.execute("SELECT * FROM trades ORDER BY trade_id ASC").fetchall()
+def list_trades(conn: sqlite3.Connection, limit: int = 100, offset: int = 0) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 1000)
+    off = _validate_int(offset, "offset", 0)
+    rows = conn.execute("SELECT * FROM trades ORDER BY trade_id ASC LIMIT ? OFFSET ?", (lim, off)).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 
 
@@ -488,9 +495,9 @@ def insert_message_event(conn: sqlite3.Connection, message: MessageEvent) -> Non
     conn.commit()
 
 
-def list_messages(conn: sqlite3.Connection, channel: str | None = None, limit: int = 50) -> list[dict[str, object]]:
-    if limit < 1 or limit > 200:
-        raise StorageError("limit out of bounds")
+def list_messages(conn: sqlite3.Connection, channel: str | None = None, limit: int = 50, offset: int = 0) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 500)
+    off = _validate_int(offset, "offset", 0)
     clauses = []
     params: list[object] = []
     if channel:
@@ -498,8 +505,8 @@ def list_messages(conn: sqlite3.Connection, channel: str | None = None, limit: i
         params.append(_validate_text(channel, "channel"))
     where = "WHERE " + " AND ".join(clauses) if clauses else ""
     rows = conn.execute(
-        f"SELECT * FROM messages {where} ORDER BY message_id ASC LIMIT ?",
-        (*params, limit),
+        f"SELECT * FROM messages {where} ORDER BY message_id ASC LIMIT ? OFFSET ?",
+        (*params, lim, off),
     ).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 
@@ -520,12 +527,12 @@ def insert_listing(conn: sqlite3.Connection, listing: Listing) -> None:
     conn.commit()
 
 
-def list_listings(conn: sqlite3.Connection, limit: int = 100) -> list[dict[str, object]]:
-    if limit < 1 or limit > 500:
-        raise StorageError("limit out of bounds")
+def list_listings(conn: sqlite3.Connection, limit: int = 100, offset: int = 0) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 1000)
+    off = _validate_int(offset, "offset", 0)
     rows = conn.execute(
-        "SELECT * FROM listings ORDER BY listing_id ASC LIMIT ?",
-        (limit,),
+        "SELECT * FROM listings ORDER BY listing_id ASC LIMIT ? OFFSET ?",
+        (lim, off),
     ).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 
@@ -542,9 +549,9 @@ def insert_purchase(conn: sqlite3.Connection, purchase: Purchase) -> None:
     conn.commit()
 
 
-def list_purchases(conn: sqlite3.Connection, listing_id: str | None = None, limit: int = 100) -> list[dict[str, object]]:
-    if limit < 1 or limit > 500:
-        raise StorageError("limit out of bounds")
+def list_purchases(conn: sqlite3.Connection, listing_id: str | None = None, limit: int = 100, offset: int = 0) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 1000)
+    off = _validate_int(offset, "offset", 0)
     clauses = []
     params: list[object] = []
     if listing_id:
@@ -552,8 +559,8 @@ def list_purchases(conn: sqlite3.Connection, listing_id: str | None = None, limi
         params.append(_validate_text(listing_id, "listing_id"))
     where = "WHERE " + " AND ".join(clauses) if clauses else ""
     rows = conn.execute(
-        f"SELECT * FROM purchases {where} ORDER BY purchase_id ASC LIMIT ?",
-        (*params, limit),
+        f"SELECT * FROM purchases {where} ORDER BY purchase_id ASC LIMIT ? OFFSET ?",
+        (*params, lim, off),
     ).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 
@@ -576,12 +583,12 @@ def insert_entertainment_item(conn: sqlite3.Connection, item: EntertainmentItem)
     conn.commit()
 
 
-def list_entertainment_items(conn: sqlite3.Connection, limit: int = 100) -> list[dict[str, object]]:
-    if limit < 1 or limit > 200:
-        raise StorageError("limit out of bounds")
+def list_entertainment_items(conn: sqlite3.Connection, limit: int = 100, offset: int = 0) -> list[dict[str, object]]:
+    lim = _validate_int(limit, "limit", 1, 1000)
+    off = _validate_int(offset, "offset", 0)
     rows = conn.execute(
-        "SELECT * FROM entertainment_items ORDER BY item_id ASC LIMIT ?",
-        (limit,),
+        "SELECT * FROM entertainment_items ORDER BY item_id ASC LIMIT ? OFFSET ?",
+        (lim, off),
     ).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 
@@ -603,9 +610,10 @@ def list_entertainment_events(
     conn: sqlite3.Connection,
     item_id: str | None = None,
     limit: int = 100,
+    offset: int = 0,
 ) -> list[dict[str, object]]:
-    if limit < 1 or limit > 200:
-        raise StorageError("limit out of bounds")
+    lim = _validate_int(limit, "limit", 1, 1000)
+    off = _validate_int(offset, "offset", 0)
     clauses = []
     params: list[object] = []
     if item_id:
@@ -613,8 +621,8 @@ def list_entertainment_events(
         params.append(_validate_text(item_id, "item_id"))
     where = "WHERE " + " AND ".join(clauses) if clauses else ""
     rows = conn.execute(
-        f"SELECT * FROM entertainment_events {where} ORDER BY event_id ASC LIMIT ?",
-        (*params, limit),
+        f"SELECT * FROM entertainment_events {where} ORDER BY event_id ASC LIMIT ? OFFSET ?",
+        (*params, lim, off),
     ).fetchall()
     return [{col: row[col] for col in row.keys()} for row in rows]
 

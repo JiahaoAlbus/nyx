@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>NYX Wallet</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">NYX</div>
+      <div class="network">Testnet</div>
+    </header>
+    
+    <main id="app">
+      <div id="no-account" class="hidden">
+        <p>No account found.</p>
+        <button id="create-account">Create Account</button>
+      </div>
+      
+      <div id="account-info" class="hidden">
+        <div class="address-box">
+          <span class="label">Address</span>
+          <span id="address" class="value">0x...</span>
+        </div>
+        <div class="balance-box">
+          <span class="label">Balance</span>
+          <span id="balance" class="value">0 NYXT</span>
+        </div>
+        <div class="actions">
+          <button id="refresh">Refresh</button>
+          <button id="faucet">Request Funds</button>
+        </div>
+      </div>
+    </main>
+    
+    <footer>
+      <span id="status">Connecting...</span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

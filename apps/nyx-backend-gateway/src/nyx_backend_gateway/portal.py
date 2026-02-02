@@ -171,16 +171,25 @@ def create_room(conn, name: str, is_public: bool = True) -> ChatRoom:
     return room
 
 
-def list_rooms(conn) -> list[dict[str, object]]:
-    return list_chat_rooms(conn)
+def list_rooms(conn, limit: int = 50, offset: int = 0) -> list[dict[str, object]]:
+    from nyx_backend_gateway.storage import _validate_int
+    lim = _validate_int(limit, "limit", 1, 500)
+    off = _validate_int(offset, "offset", 0)
+    rows = conn.execute(
+        "SELECT room_id, name, created_at, is_public FROM chat_rooms ORDER BY created_at ASC, room_id ASC LIMIT ? OFFSET ?",
+        (lim, off),
+    ).fetchall()
+    return [{col: row[col] for col in row.keys()} for row in rows]
 
 
 def post_message(conn, room_id: str, sender_account_id: str, body: str) -> tuple[dict[str, object], dict[str, object]]:
     if not isinstance(body, str) or not body or len(body) > 512:
         raise PortalError("message invalid")
-    messages = list_chat_messages(conn, room_id=room_id, after=None, limit=1_000_000)
-    if messages:
-        last = messages[-1]
+    last = conn.execute(
+        "SELECT seq, chain_head FROM chat_messages WHERE room_id = ? ORDER BY seq DESC LIMIT 1",
+        (room_id,),
+    ).fetchone()
+    if last:
         prev_digest = str(last["chain_head"])
         seq = int(last["seq"]) + 1
     else:

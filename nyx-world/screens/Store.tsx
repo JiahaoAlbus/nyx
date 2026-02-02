@@ -7,7 +7,7 @@ interface MarketProps {
   backendOnline: boolean;
 }
 
-export const Market: React.FC<MarketProps> = ({ seed, runId, backendOnline }) => {
+export const Store: React.FC<MarketProps> = ({ seed, runId, backendOnline }) => {
   const [listings, setListings] = useState<Record<string, unknown>[]>([]);
   const [purchases, setPurchases] = useState<Record<string, unknown>[]>([]);
   const [sku, setSku] = useState('');

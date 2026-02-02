@@ -2,10 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Onboarding } from './screens/Onboarding';
 import { Home } from './screens/Home';
 import { Wallet } from './screens/Wallet';
-import { Swap } from './screens/Swap';
+import { Exchange } from './screens/Exchange';
 import { Chat } from './screens/Chat';
-import { Market } from './screens/Market';
+import { Store } from './screens/Store';
 import { Activity } from './screens/Activity';
+import { Evidence } from './screens/Evidence';
+import { Settings } from './screens/Settings';
+import { DappBrowser } from './screens/DappBrowser';
 import { BottomNav } from './components/BottomNav';
 import { Screen } from './types';
 import { checkHealth, fetchCapabilities, PortalSession } from './api';
@@ -34,7 +37,6 @@ const saveSession = (session: PortalSession | null) => {
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Screen>(Screen.HOME);
-  const [showActivity, setShowActivity] = useState(false);
   const [backendOnline, setBackendOnline] = useState(false);
   const [backendStatus, setBackendStatus] = useState('Backend: unknown');
   const [capabilities, setCapabilities] = useState<Record<string, unknown> | null>(null);
@@ -65,9 +67,6 @@ const App: React.FC = () => {
   }, []);
 
   const renderScreen = () => {
-    if (showActivity) {
-      return <Activity runId={runId} onBack={() => setShowActivity(false)} />;
-    }
     switch (activeTab) {
       case Screen.HOME:
         return (
@@ -88,14 +87,13 @@ const App: React.FC = () => {
             backendOnline={backendOnline}
             session={session}
             onNavigate={(screen) => {
-              if (screen === Screen.ACTIVITY) setShowActivity(true);
-              else setActiveTab(screen);
+              setActiveTab(screen);
             }}
           />
         );
-      case Screen.SWAP:
+      case Screen.EXCHANGE:
         return (
-          <Swap
+          <Exchange
             seed={seed}
             runId={runId}
             backendOnline={backendOnline}
@@ -110,16 +108,33 @@ const App: React.FC = () => {
             session={session}
           />
         );
-      case Screen.MARKET:
+      case Screen.STORE:
         return (
-          <Market
+          <Store
             seed={seed}
             runId={runId}
             backendOnline={backendOnline}
           />
         );
+      case Screen.ACTIVITY:
+        return <Activity runId={runId} onBack={() => setActiveTab(Screen.HOME)} />;
+      case Screen.EVIDENCE:
+        return <Evidence />;
+      case Screen.SETTINGS:
+        return (
+          <Settings 
+            session={session}
+            seed={seed}
+            runId={runId}
+            onSeedChange={setSeed}
+            onRunIdChange={setRunId}
+            onLogout={() => setSession(null)}
+          />
+        );
+      case Screen.DAPP_BROWSER:
+        return <DappBrowser />;
       default:
-        return <Home backendOnline={backendOnline} backendStatus={backendStatus} capabilities={capabilities} onRefresh={refreshHealth} />;
+        return <Home backendOnline={backendOnline} backendStatus={backendStatus} capabilities={capabilities} onRefresh={refreshHealth} seed={seed} runId={runId} />;
     }
   };
 
@@ -197,7 +212,7 @@ const App: React.FC = () => {
         {renderScreen()}
       </main>
 
-      {!showActivity && <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />}
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 };

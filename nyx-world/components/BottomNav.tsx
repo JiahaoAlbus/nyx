@@ -12,40 +12,53 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
 
   return (
     <nav className="fixed bottom-0 z-40 w-full max-w-md mx-auto bg-white/90 dark:bg-[#1f1c13]/90 backdrop-blur-xl border-t border-primary/10 pb-safe">
-      <div className="flex items-center justify-between px-2 pt-2 pb-2">
+      <div className="flex items-center justify-between px-1 pt-2 pb-2">
         {/* World (Home) */}
         <button className={getButtonClass(activeTab === Screen.HOME)} onClick={() => onTabChange(Screen.HOME)}>
-          <div className="relative">
-            <span className={`material-symbols-outlined text-[26px] ${activeTab === Screen.HOME ? 'filled text-primary' : ''}`}>public</span>
-            {activeTab === Screen.HOME && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></span>}
-          </div>
-          <span className="text-[10px] font-medium">World</span>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.HOME ? 'filled text-primary' : ''}`}>public</span>
+          <span className="text-[9px] font-medium">Home</span>
         </button>
 
         {/* Wallet */}
         <button className={getButtonClass(activeTab === Screen.WALLET)} onClick={() => onTabChange(Screen.WALLET)}>
-          <span className={`material-symbols-outlined text-[26px] group-hover:scale-105 transition-transform ${activeTab === Screen.WALLET ? 'filled text-primary' : ''}`}>account_balance_wallet</span>
-          <span className="text-[10px] font-medium">Wallet</span>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.WALLET ? 'filled text-primary' : ''}`}>account_balance_wallet</span>
+          <span className="text-[9px] font-medium">Wallet</span>
         </button>
 
-        {/* Swap (Center Highlighted) */}
-        <button className="flex flex-1 flex-col items-center gap-1 p-2 group" onClick={() => onTabChange(Screen.SWAP)}>
-          <div className={`p-2 rounded-xl -mt-6 mb-1 shadow-lg border border-primary/20 transition-all duration-300 ${activeTab === Screen.SWAP ? 'bg-primary text-black' : 'bg-primary/10 dark:bg-primary/20 text-primary'}`}>
-            <span className="material-symbols-outlined text-[28px] group-hover:rotate-180 transition-transform duration-500">currency_exchange</span>
-          </div>
-          <span className={`text-[10px] font-medium translate-y-[-4px] ${activeTab === Screen.SWAP ? 'text-primary' : 'text-text-subtle dark:text-gray-400'}`}>Swap</span>
+        {/* Exchange */}
+        <button className={getButtonClass(activeTab === Screen.EXCHANGE)} onClick={() => onTabChange(Screen.EXCHANGE)}>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.EXCHANGE ? 'filled text-primary' : ''}`}>currency_exchange</span>
+          <span className="text-[9px] font-medium">Trade</span>
         </button>
 
         {/* Chat */}
         <button className={getButtonClass(activeTab === Screen.CHAT)} onClick={() => onTabChange(Screen.CHAT)}>
-          <span className={`material-symbols-outlined text-[26px] group-hover:scale-105 transition-transform ${activeTab === Screen.CHAT ? 'filled text-primary' : ''}`}>chat_bubble</span>
-          <span className="text-[10px] font-medium">Chat</span>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.CHAT ? 'filled text-primary' : ''}`}>chat_bubble</span>
+          <span className="text-[9px] font-medium">Chat</span>
         </button>
 
-        {/* Market */}
-        <button className={getButtonClass(activeTab === Screen.MARKET)} onClick={() => onTabChange(Screen.MARKET)}>
-          <span className={`material-symbols-outlined text-[26px] group-hover:scale-105 transition-transform ${activeTab === Screen.MARKET ? 'filled text-primary' : ''}`}>storefront</span>
-          <span className="text-[10px] font-medium">Market</span>
+        {/* Store */}
+        <button className={getButtonClass(activeTab === Screen.STORE)} onClick={() => onTabChange(Screen.STORE)}>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.STORE ? 'filled text-primary' : ''}`}>storefront</span>
+          <span className="text-[9px] font-medium">Store</span>
+        </button>
+
+        {/* Activity */}
+        <button className={getButtonClass(activeTab === Screen.ACTIVITY)} onClick={() => onTabChange(Screen.ACTIVITY)}>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.ACTIVITY ? 'filled text-primary' : ''}`}>history</span>
+          <span className="text-[9px] font-medium">Activity</span>
+        </button>
+
+        {/* Evidence */}
+        <button className={getButtonClass(activeTab === Screen.EVIDENCE)} onClick={() => onTabChange(Screen.EVIDENCE)}>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.EVIDENCE ? 'filled text-primary' : ''}`}>verified</span>
+          <span className="text-[9px] font-medium">Proof</span>
+        </button>
+
+        {/* Settings */}
+        <button className={getButtonClass(activeTab === Screen.SETTINGS)} onClick={() => onTabChange(Screen.SETTINGS)}>
+          <span className={`material-symbols-outlined text-[22px] ${activeTab === Screen.SETTINGS ? 'filled text-primary' : ''}`}>settings</span>
+          <span className="text-[9px] font-medium">Set</span>
         </button>
       </div>
     </nav>

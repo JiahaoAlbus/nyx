@@ -7,7 +7,7 @@ interface SwapProps {
   backendOnline: boolean;
 }
 
-export const Swap: React.FC<SwapProps> = ({ seed, runId, backendOnline }) => {
+export const Exchange: React.FC<SwapProps> = ({ seed, runId, backendOnline }) => {
   const [side, setSide] = useState('BUY');
   const [assetIn, setAssetIn] = useState('NYXT');
   const [assetOut, setAssetOut] = useState('USDX');
